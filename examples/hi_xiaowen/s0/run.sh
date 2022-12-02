@@ -3,14 +3,15 @@
 
 . ./path.sh
 
-stage=0
-stop_stage=4
+stage=2
+stop_stage=2
 num_keywords=2
 
 config=conf/ds_tcn.yaml
+symbol_table=/home/mlxu/github/wekws/examples/hey_snips/s0/data/symbol_table
 norm_mean=true
 norm_var=true
-gpus="0,1"
+gpus="1,2"
 
 checkpoint=
 dir=exp/ds_tcn
@@ -18,7 +19,7 @@ dir=exp/ds_tcn
 num_average=30
 score_checkpoint=$dir/avg_${num_average}.pt
 
-download_dir=./data/local # your data dir
+download_dir=/home/mlxu/data # your data dir
 
 . tools/parse_options.sh || exit 1;
 window_shift=50
@@ -82,6 +83,7 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
       --num_keywords $num_keywords \
       --min_duration 50 \
       --seed 666 \
+      --symbol_table $symbol_table \
       $cmvn_opts \
       ${checkpoint:+--checkpoint $checkpoint}
 fi

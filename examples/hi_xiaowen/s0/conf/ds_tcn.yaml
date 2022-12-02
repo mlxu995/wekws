@@ -24,6 +24,7 @@ dataset_conf:
         batch_size: 256
 
 model:
+    vocab_size: 176
     hidden_dim: 256
     preprocessing:
         type: linear
@@ -43,4 +44,4 @@ training_config:
     grad_clip: 5
     max_epoch: 80
     log_interval: 10
-
+    criterion: ctc_joint_loss

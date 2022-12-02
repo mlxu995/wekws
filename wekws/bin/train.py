@@ -30,6 +30,7 @@ from wekws.dataset.dataset import Dataset
 from wekws.utils.checkpoint import load_checkpoint, save_checkpoint
 from wekws.model.kws_model import init_model
 from wekws.utils.executor import Executor
+from wekws.utils.file_utils import read_symbol_table
 from wekws.utils.train_utils import count_parameters, set_mannul_seed
 
 
@@ -83,6 +84,9 @@ def get_args():
     parser.add_argument('--noise_lmdb',
                         default=None,
                         help='noise lmdb file')
+    parser.add_argument('--symbol_table',
+                        default=None,
+                        help='model unit symbol table for training')
 
     args = parser.parse_args()
     return args
@@ -112,11 +116,16 @@ def main():
     cv_conf['spec_aug'] = False
     cv_conf['shuffle'] = False
 
+    if args.symbol_table is not None:
+        symbol_table = read_symbol_table(args.symbol_table)
+    else:
+        symbol_table = None
     train_dataset = Dataset(args.train_data,
+                            symbol_table,
                             train_conf,
                             reverb_lmdb=args.reverb_lmdb,
                             noise_lmdb=args.noise_lmdb)
-    cv_dataset = Dataset(args.cv_data, cv_conf)
+    cv_dataset = Dataset(args.cv_data, None, cv_conf)
 
     train_data_loader = DataLoader(train_dataset,
                                    batch_size=None,

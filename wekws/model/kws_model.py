@@ -17,6 +17,7 @@ from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from wekws.model.cmvn import GlobalCMVN
 from wekws.model.classifier import (GlobalClassifier, LastClassifier,
@@ -48,6 +49,7 @@ class KWSModel(nn.Module):
         backbone: nn.Module,
         classifier: nn.Module,
         activation: nn.Module,
+        ctc_lo: Optional[nn.Module] = None
     ):
         super().__init__()
         self.idim = idim
@@ -58,19 +60,24 @@ class KWSModel(nn.Module):
         self.backbone = backbone
         self.classifier = classifier
         self.activation = activation
+        self.ctc_lo = ctc_lo
 
     def forward(
         self,
         x: torch.Tensor,
         in_cache: torch.Tensor = torch.zeros(0, 0, 0, dtype=torch.float)
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor], torch.Tensor]:
         if self.global_cmvn is not None:
             x = self.global_cmvn(x)
         x = self.preprocessing(x)
         x, out_cache = self.backbone(x, in_cache)
+        if self.ctc_lo is not None:
+            x_ctc = F.log_softmax(self.ctc_lo(x), dim=2)
+        else:
+            x_ctc = None
         x = self.classifier(x)
         x = self.activation(x)
-        return x, out_cache
+        return x, x_ctc, out_cache
 
     def fuse_modules(self):
         self.preprocessing.fuse_modules()
@@ -92,6 +99,8 @@ def init_model(configs):
     input_dim = configs['input_dim']
     output_dim = configs['output_dim']
     hidden_dim = configs['hidden_dim']
+    vocab_size = configs.get('vocab_size', -1)
+
 
     prep_type = configs['preprocessing']['type']
     if prep_type == 'linear':
@@ -161,7 +170,11 @@ def init_model(configs):
     else:
         classifier = LinearClassifier(hidden_dim, output_dim)
         activation = nn.Sigmoid()
+    if vocab_size > 0:
+        ctc_lo = LinearClassifier(hidden_dim, vocab_size)   
+    else:
+        ctc_lo = None
 
     kws_model = KWSModel(input_dim, output_dim, hidden_dim, global_cmvn,
-                         preprocessing, backbone, classifier, activation)
+                         preprocessing, backbone, classifier, activation, ctc_lo)
     return kws_model

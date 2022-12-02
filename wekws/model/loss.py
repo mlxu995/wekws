@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Optional
+
 import torch
 import torch.nn.functional as F
 
@@ -83,6 +85,92 @@ def max_pooling_loss(logits: torch.Tensor,
     return loss, acc
 
 
+def ctc_joint_loss(logits: torch.Tensor,
+                   target: torch.Tensor,
+                   lengths: torch.Tensor,
+                   min_duration: int = 0,
+                   ctc_logits: Optional[torch.Tensor] = None,
+                   ctc_target: Optional[torch.Tensor] = None,
+                   target_lengths: Optional[torch.Tensor] = None):
+    ''' Max-pooling loss
+        For keyword, select the frame with the highest posterior.
+            The keyword is triggered when any of the frames is triggered.
+        For none keyword, select the hardest frame, namely the frame
+            with lowest filler posterior(highest keyword posterior).
+            the keyword is not triggered when all frames are not triggered.
+
+    Attributes:
+        logits: (B, T, D), D is the number of keywords
+        target: (B)
+        lengths: (B)
+        min_duration: min duration of the keyword
+    Returns:
+        (float): loss of current batch
+        (float): accuracy of current batch
+    '''
+    mask = padding_mask(lengths)
+    num_utts = logits.size(0)
+    num_keywords = logits.size(2)
+
+    target = target.cpu()
+    loss = 0.0
+    ctc_loss = 0.0
+    if ctc_logits is not None:
+        ctc_filter_mask = torch.max(ctc_target, dim=-1)[0] > 0
+        ctc_logits = ctc_logits[ctc_filter_mask]
+        ctc_target = ctc_target[ctc_filter_mask]
+        feat_lengths = lengths[ctc_filter_mask]
+        target_lengths = target_lengths[ctc_filter_mask]
+        ctc_loss += F.ctc_loss(ctc_logits.transpose(0, 1),
+                              ctc_target, feat_lengths,
+                              target_lengths, blank=0,
+                              reduction='sum',
+                              zero_infinity=False)        
+        ctc_loss /= ctc_logits.size(1)
+
+    for i in range(num_utts):
+        # if torch.max(ctc_target[i], dim=-1)[0] > 0:
+        #     continue
+        for j in range(num_keywords):
+            # Add entropy loss CE = -(t * log(p) + (1 - t) * log(1 - p))
+            if target[i] == j:
+                # For the keyword, do max-polling
+                prob = logits[i, :, j]
+                m = mask[i].clone().detach()
+                m[:min_duration] = True
+                prob = prob.masked_fill(m, 0.0)
+                prob = torch.clamp(prob, 1e-8, 1.0)
+                max_prob = prob.max()
+                loss += -torch.log(max_prob)
+            else:
+                # For other keywords or filler, do min-polling
+                prob = 1 - logits[i, :, j]
+                prob = prob.masked_fill(mask[i], 1.0)
+                prob = torch.clamp(prob, 1e-8, 1.0)
+                min_prob = prob.min()
+                loss += -torch.log(min_prob)
+    # TODO num_utts = num_utts - ctt_num_utts
+    loss = loss / num_utts
+    loss = 0.8 * loss + 0.2 * ctc_loss
+
+    # Compute accuracy of current batch
+    mask = mask.unsqueeze(-1)
+    logits = logits.masked_fill(mask, 0.0)
+    max_logits, index = logits.max(1)
+    num_correct = 0
+    for i in range(num_utts):
+        max_p, idx = max_logits[i].max(0)
+        # Predict correct as the i'th keyword
+        if max_p > 0.5 and idx == target[i]:
+            num_correct += 1
+        # Predict correct as the filler, filler id < 0
+        if max_p < 0.5 and target[i] < 0:
+            num_correct += 1
+    acc = num_correct / num_utts
+    # acc = 0.0
+    return loss, acc
+
+
 def acc_frame(
     logits: torch.Tensor,
     target: torch.Tensor,
@@ -113,13 +201,43 @@ def cross_entropy(logits: torch.Tensor, target: torch.Tensor):
 def criterion(type: str,
               logits: torch.Tensor,
               target: torch.Tensor,
-              lengths: torch.Tensor,
-              min_duration: int = 0):
+              feats_lengths: torch.Tensor,
+              min_duration: int = 0,
+              ctc_logits: Optional[torch.Tensor] = None,
+              ctc_target: Optional[torch.Tensor] = None,
+              ctc_label_lengths: Optional[torch.Tensor] = None):
     if type == 'ce':
         loss, acc = cross_entropy(logits, target)
         return loss, acc
     elif type == 'max_pooling':
-        loss, acc = max_pooling_loss(logits, target, lengths, min_duration)
+        loss, acc = max_pooling_loss(logits, target, feats_lengths, min_duration)
+        return loss, acc
+    elif type == 'ctc_joint_loss':
+        loss, acc = ctc_joint_loss(logits, target, feats_lengths, min_duration,
+                                   ctc_logits, ctc_target, ctc_label_lengths)
         return loss, acc
     else:
         exit(1)
+
+
+if __name__ == '__main__':
+    import random
+    logits = torch.rand((6, 200, 1))
+    target = torch.LongTensor([-1, -1, 0, -1, -1, 0])
+    lengths = torch.LongTensor([160, 132, 80, 200, 136, 128])
+    ctc_logits = torch.rand((6, 200, 80))
+    ctc_logits = torch.log_softmax(ctc_logits, dim=2)
+    ctc_target = torch.LongTensor([
+        [random.randint(1, 79) for _ in range(16)],
+        [random.randint(1, 79) for _ in range(16)],
+        [-1 for _ in range(16)],
+        [random.randint(1, 79) for _ in range(16)],
+        [-1 for _ in range(16)],
+        [random.randint(1, 79) for _ in range(16)]
+    ])
+    target_lengths = torch.LongTensor([16, 15, 12, 10, 8, 6])
+    loss = max_pooling_loss(logits, target, lengths,
+                            ctc_logits=ctc_logits,
+                            ctc_target=ctc_target,
+                            target_lengths=target_lengths)
+    print(loss)
