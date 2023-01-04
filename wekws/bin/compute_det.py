@@ -37,10 +37,10 @@ def load_label_and_score(keyword, label_file, score_file):
         for line in fin:
             obj = json.loads(line.strip())
             assert 'key' in obj
-            assert 'txt' in obj
+            assert 'label' in obj
             assert 'duration' in obj
             key = obj['key']
-            index = obj['txt']
+            index = obj['label']
             duration = obj['duration']
             assert key in score_table
             if index == keyword:

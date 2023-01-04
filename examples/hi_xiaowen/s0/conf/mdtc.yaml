@@ -6,9 +6,8 @@ dataset_conf:
         resample_rate: 16000
     speed_perturb: false
     feature_extraction_conf:
-        feature_type: 'mfcc'
-        num_ceps: 80
-        num_mel_bins: 80
+        feature_type: 'fbank'
+        num_mel_bins: 40
         frame_shift: 10
         frame_length: 25
         dither: 1.0
@@ -18,15 +17,16 @@ dataset_conf:
         num_t_mask: 1
         num_f_mask: 1
         max_t: 20
-        max_f: 40
+        max_f: 10
     shuffle: true
     shuffle_conf:
         shuffle_size: 1500
     batch_conf:
-        batch_size: 100
+        batch_size: 256
 
 model:
-    hidden_dim: 64
+    vocab_size: 176
+    hidden_dim: 128
     preprocessing:
         type: linear
     backbone:
@@ -34,7 +34,7 @@ model:
         num_stack: 4
         stack_size: 4
         kernel_size: 5
-        hidden_dim: 64
+        hidden_dim: 128
         causal: True
 
 optim: adam
@@ -45,3 +45,4 @@ training_config:
     grad_clip: 5
     max_epoch: 100
     log_interval: 10
+    criterion: ctc_joint_loss

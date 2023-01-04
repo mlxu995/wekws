@@ -53,12 +53,21 @@ for dir in $train_dir $dev_dir $test_dir; do
   sort -u $dir/transcripts.txt > $dir/text
 done
 
+<<<<<<< HEAD
 mkdir -p data_aishell/train data_aishell/dev data_aishell/test
 
 for f in wav.scp text; do
   cp $train_dir/$f data_aishell/train/$f || exit 1;
   cp $dev_dir/$f data_aishell/dev/$f || exit 1;
   cp $test_dir/$f data_aishell/test/$f || exit 1;
+=======
+mkdir -p data_ctc/train data_ctc/dev data_ctc/test
+
+for f in wav.scp text; do
+  cp $train_dir/$f data_ctc/train/$f || exit 1;
+  cp $dev_dir/$f data_ctc/dev/$f || exit 1;
+  cp $test_dir/$f data_ctc/test/$f || exit 1;
+>>>>>>> update ctc
 done
 
 echo "$0: AISHELL data preparation succeeded"

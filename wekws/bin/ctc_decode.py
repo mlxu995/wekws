@@ -29,6 +29,12 @@ from wekws.dataset.dataset import Dataset
 from wekws.model.kws_model import init_model
 from wekws.utils.checkpoint import load_checkpoint
 
+from typing import List
+import torch
+
+# from wenet.utils.mask import make_pad_mask
+
+
 
 def get_args():
     parser = argparse.ArgumentParser(description='recognize with your model')
@@ -66,7 +72,19 @@ def get_args():
     return args
 
 
+def remove_duplicates_and_blank(hyp: List[int]) -> List[int]:
+    new_hyp: List[int] = []
+    cur = 0
+    while cur < len(hyp):
+        if hyp[cur] != 0:
+            new_hyp.append(hyp[cur])
+        prev = cur
+        while cur < len(hyp) and hyp[cur] == hyp[prev]:
+            cur += 1
+    return new_hyp
+
 def main():
+    print('begin main')
     args = get_args()
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s %(message)s')
@@ -105,25 +123,41 @@ def main():
     model.eval()
     score_abs_path = os.path.abspath(args.score_file)
     with torch.no_grad(), open(score_abs_path, 'w', encoding='utf8') as fout:
+        print('begin loop')
         for batch_idx, batch in enumerate(test_data_loader):
             keys, feats, target, ctc_target, feats_lengths, ctc_label_lengths = batch
+            ctc_filter_mask = torch.max(ctc_target, dim=-1)[0] > 0
             feats = feats.to(device)
             feats_lengths = feats_lengths.to(device)
-            logits, _, _ = model(feats)
-            num_keywords = logits.shape[2]
-            logits = logits.cpu()
-            for i in range(len(keys)):
-                key = keys[i]
-                score = logits[i][:feats_lengths[i]]
-                for keyword_i in range(num_keywords):
-                    keyword_scores = score[:, keyword_i]
-                    score_frames = ' '.join(['{:.6f}'.format(x)
-                                            for x in keyword_scores.tolist()])
-                    fout.write('{} {} {}\n'.format(
-                        key, keyword_i, score_frames))
-            if batch_idx % 10 == 0:
-                print('Progress batch {}'.format(batch_idx))
-                sys.stdout.flush()
+            feats = feats[ctc_filter_mask]
+            feats_lengths = feats_lengths[ctc_filter_mask]
+            ctc_target = ctc_target[ctc_filter_mask]
+            target_lengths = target_lengths[ctc_filter_mask]
+            print('begin forward')
+            _, ctc_log_probs, _ = model(feats)
+            print('end forward')
+            maxlen = ctc_log_probs.size(1)
+            topk_prob, topk_index = ctc_log_probs.topk(1, dim=2)  # (B, maxlen, 1)
+            # mask = make_pad_mask(feats_lengths, maxlen)  # (B, maxlen)
+            # topk_index = topk_index.masked_fill_(mask, self.eos)  # (B, maxlen)
+            hyps = [hyp.tolist() for hyp in topk_index]
+            scores = topk_prob.max(1)
+            hyps = [remove_duplicates_and_blank(hyp) for hyp in hyps]
+            print(scores)
+
+            # logits = logits.cpu()
+            # for i in range(len(keys)):
+            #     key = keys[i]
+            #     score = logits[i][:feats_lengths[i]]
+            #     for keyword_i in range(num_keywords):
+            #         keyword_scores = score[:, keyword_i]
+            #         score_frames = ' '.join(['{:.6f}'.format(x)
+            #                                 for x in keyword_scores.tolist()])
+            #         fout.write('{} {} {}\n'.format(
+            #             key, keyword_i, score_frames))
+            # if batch_idx % 10 == 0:
+            #     print('Progress batch {}'.format(batch_idx))
+            #     sys.stdout.flush()
 
 
 if __name__ == '__main__':

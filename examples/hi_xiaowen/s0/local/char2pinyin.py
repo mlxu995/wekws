@@ -3,8 +3,8 @@ from pypinyin import pinyin, Style
 from pypinyin.contrib.tone_convert import to_initials, to_finals_tone3
 
 
-txt_file = '/home/mlxu/github/wekws/examples/hi_xiaowen/s0/data/train/text'
-pinyin_file = '/home/mlxu/github/wekws/examples/hi_xiaowen/s0/data/train/text_pinyin'
+txt_file = '/home/mlxu/github/wekws/examples/hi_xiaowen/s0/data_ctc/test/text'
+pinyin_file = '/home/mlxu/github/wekws/examples/hi_xiaowen/s0/data_ctc/test/text_pinyin'
 
 with open(txt_file) as f, open(pinyin_file, 'w') as f_w:
     for line in tqdm(list(f.readlines())):

@@ -37,4 +37,8 @@ data
 raw_wav
 tensorboard
 **/*build*
+<<<<<<< HEAD
 data_aishell
+=======
+data_ctc
+>>>>>>> update ctc

@@ -126,9 +126,10 @@ def ctc_joint_loss(logits: torch.Tensor,
                               target_lengths, blank=0,
                               reduction='sum',
                               zero_infinity=False)        
-        ctc_loss /= ctc_logits.size(1)
+        ctc_loss /= ctc_target.size(0)
 
     for i in range(num_utts):
+        # filter out ctc sample
         # if torch.max(ctc_target[i], dim=-1)[0] > 0:
         #     continue
         for j in range(num_keywords):
@@ -149,7 +150,12 @@ def ctc_joint_loss(logits: torch.Tensor,
                 prob = torch.clamp(prob, 1e-8, 1.0)
                 min_prob = prob.min()
                 loss += -torch.log(min_prob)
+<<<<<<< HEAD
     # TODO num_utts = num_utts - ctt_num_utts
+=======
+    # filter out ctc sample
+    # loss = loss / (num_utts - ctt_num_utts)
+>>>>>>> update ctc
     loss = loss / num_utts
     loss = 0.8 * loss + 0.2 * ctc_loss
 
@@ -168,7 +174,11 @@ def ctc_joint_loss(logits: torch.Tensor,
             num_correct += 1
     acc = num_correct / num_utts
     # acc = 0.0
+<<<<<<< HEAD
     return loss, acc
+=======
+    return loss, ctc_loss, acc
+>>>>>>> update ctc
 
 
 def acc_frame(
@@ -211,11 +221,18 @@ def criterion(type: str,
         return loss, acc
     elif type == 'max_pooling':
         loss, acc = max_pooling_loss(logits, target, feats_lengths, min_duration)
+<<<<<<< HEAD
         return loss, acc
     elif type == 'ctc_joint_loss':
         loss, acc = ctc_joint_loss(logits, target, feats_lengths, min_duration,
                                    ctc_logits, ctc_target, ctc_label_lengths)
+=======
+>>>>>>> update ctc
         return loss, acc
+    elif type == 'ctc_joint_loss':
+        loss, ctc_loss, acc = ctc_joint_loss(logits, target, feats_lengths, min_duration,
+                                   ctc_logits, ctc_target, ctc_label_lengths)
+        return loss, ctc_loss, acc
     else:
         exit(1)
 

@@ -125,7 +125,7 @@ def main():
                             train_conf,
                             reverb_lmdb=args.reverb_lmdb,
                             noise_lmdb=args.noise_lmdb)
-    cv_dataset = Dataset(args.cv_data, None, cv_conf)
+    cv_dataset = Dataset(args.cv_data, symbol_table, cv_conf)
 
     train_data_loader = DataLoader(train_dataset,
                                    batch_size=None,
@@ -222,7 +222,7 @@ def main():
         logging.info('Epoch {} TRAIN info lr {}'.format(epoch, lr))
         executor.train(model, optimizer, train_data_loader, device, writer,
                        training_config)
-        cv_loss, cv_acc = executor.cv(model, cv_data_loader, device,
+        cv_loss, cv_ctc_loss, cv_acc = executor.cv(model, cv_data_loader, device,
                                       training_config)
         logging.info('Epoch {} CV info cv_loss {} cv_acc {}'.format(
             epoch, cv_loss, cv_acc))
@@ -235,6 +235,7 @@ def main():
                 'cv_loss': cv_loss,
             })
             writer.add_scalar('epoch/cv_loss', cv_loss, epoch)
+            writer.add_scalar('epoch/cv_ctc_loss', cv_ctc_loss, epoch)
             writer.add_scalar('epoch/cv_acc', cv_acc, epoch)
             writer.add_scalar('epoch/lr', lr, epoch)
         final_epoch = epoch

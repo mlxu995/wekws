@@ -3,17 +3,17 @@
 
 . ./path.sh
 
-stage=2
-stop_stage=2
+stage=3
+stop_stage=3
 num_keywords=2
 
-config=conf/ds_tcn.yaml
+config=conf/mdtc.yaml
 symbol_table=/home/mlxu/github/wekws/examples/hey_snips/s0/data/symbol_table
 norm_mean=true
 norm_var=true
-gpus="1,2"
+gpus="0,1"
 
-checkpoint=
+checkpoint=/home/mlxu/github/wekws/examples/hi_xiaowen/s0/exp/mdtc/17.pt
 dir=exp/mdtc
 
 num_average=30
@@ -90,31 +90,31 @@ fi
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
   echo "Do model average, Compute FRR/FAR ..."
-  python wekws/bin/average_model.py \
-    --dst_model $score_checkpoint \
-    --src_path $dir  \
-    --num ${num_average} \
-    --val_best
-  result_dir=$dir/test_$(basename $score_checkpoint)
+  # python wekws/bin/average_model.py \
+  #   --dst_model $score_checkpoint \
+  #   --src_path $dir  \
+  #   --num ${num_average} \
+  #   --val_best
+  result_dir=$dir/test_ctc
   mkdir -p $result_dir
-  python wekws/bin/score.py \
+  python wekws/bin/ctc_decode.py \
     --config $dir/config.yaml \
-    --test_data data/test/data.list \
-    --batch_size 256 \
+    --test_data data/dev/data.list \
+    --batch_size 2 \
     --checkpoint $score_checkpoint \
     --score_file $result_dir/score.txt  \
     --num_workers 8 \
-    --gpu 1 \
+    --gpu 2 \
     --prefetch 200
 
-  for keyword in 0 1; do
-    python wekws/bin/compute_det.py \
-      --keyword $keyword \
-      --test_data data/test/data.list \
-      --window_shift $window_shift \
-      --score_file $result_dir/score.txt \
-      --stats_file $result_dir/stats.${keyword}.txt
-  done
+  # for keyword in 0 1; do
+  #   python wekws/bin/compute_det.py \
+  #     --keyword $keyword \
+  #     --test_data data/test/data.list \
+  #     --window_shift $window_shift \
+  #     --score_file $result_dir/score.txt \
+  #     --stats_file $result_dir/stats.${keyword}.txt
+  # done
 fi
 
 
