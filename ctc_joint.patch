@@ -1,0 +1,5099 @@
+diff --git a/.flake8 b/.flake8
+index 63c6cff..91118a7 100644
+--- a/.flake8
++++ b/.flake8
+@@ -9,7 +9,7 @@ ignore =
+     # to line this up with executable bit
+     EXE001,
+     # these ignores are from flake8-bugbear; please fix!
+-    B007,B008,B905,
++    B007,B008,
+     # these ignores are from flake8-comprehensions; please fix!
+     C400,C401,C402,C403,C404,C405,C407,C411,C413,C414,C415
+ exclude =
+diff --git a/.gitignore b/.gitignore
+index 70ad057..138288e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -37,3 +37,8 @@ data
+ raw_wav
+ tensorboard
+ **/*build*
++<<<<<<< HEAD
++data_aishell
++=======
++data_ctc
++>>>>>>> update ctc
+diff --git a/README.md b/README.md
+index 3a77fc7..401ffd9 100644
+--- a/README.md
++++ b/README.md
+@@ -1,6 +1,6 @@
+ # WeKws
+ 
+-[**Roadmap**](https://github.com/wenet-e2e/wekws/issues/121)
++[**Roadmap**](ROADMAP.md)
+ | [**Paper**](https://arxiv.org/pdf/2210.16743.pdf)
+ 
+ 
+@@ -71,7 +71,7 @@ Please scan the QR code on the right to join the chat group.
+ 
+ * Mining Effective Negative Training Samples for Keyword Spotting
+   ([github]( https://github.com/jingyonghou/KWS_Max-pooling_RHE),
+-   [paper](https://www.microsoft.com/en-us/research/uploads/prod/2020/04/ICASSP2020_Max_pooling_KWS.pdf))
++   [paper](http://lxie.nwpu-aslp.org/papers/2020ICASSP_HJY.pdf))
+ * Max-pooling Loss Training of Long Short-term Memory Networks for Small-footprint Keyword Spotting
+   ([paper](https://arxiv.org/pdf/1705.02411.pdf))
+ * A depthwise separable convolutional neural network for keyword spotting on an embedded system
+diff --git a/examples/hi_xiaowen/s0/README.md b/examples/hi_xiaowen/s0/README.md
+index aad6cdc..964c81d 100644
+--- a/examples/hi_xiaowen/s0/README.md
++++ b/examples/hi_xiaowen/s0/README.md
+@@ -1,5 +1,3 @@
+-Comparison among different backbones,
+-all models use Max-Pooling loss.
+ FRRs with FAR fixed at once per hour:
+ 
+ | model                 | params(K) | epoch     | hi_xiaowen | nihao_wenwen |
+@@ -10,58 +8,3 @@ FRRs with FAR fixed at once per hour:
+ | DS_TCN(spec_aug)      | 287       | 80(avg30) | 0.008176   | 0.005075     |
+ | MDTC                  | 156       | 80(avg10) | 0.007142   | 0.005920     |
+ | MDTC_Small            | 31        | 80(avg10) | 0.005357   | 0.005920     |
+-
+-Next, we use CTC loss to train the model, with DS_TCN and FSMN backbones.
+-and we use CTC prefix beam search to decode and detect keywords,
+-the detection is either in non-streaming or streaming fashion.
+-
+-Since the FAR is pretty low when using CTC loss,
+-the follow results are FRRs with FAR fixed at once per 12 hours:
+-
+-Comparison between Max-pooling and CTC loss.
+-The CTC model is fine-tuned with base model pretrained on WenetSpeech(23 epoch, not converged).
+-FRRs with FAR fixed at once per 12 hours
+-
+-| model                 | loss        | hi_xiaowen | nihao_wenwen | model ckpt |
+-|-----------------------|-------------|------------|--------------|------------|
+-| DS_TCN(spec_aug)      | Max-pooling | 0.051217   | 0.021896     | [dstcn-maxpooling](https://modelscope.cn/models/thuduj12/kws_wenwen_dstcn/files) |
+-| DS_TCN(spec_aug)      | CTC         | 0.056574   | 0.056856     | [dstcn-ctc](https://modelscope.cn/models/thuduj12/kws_wenwen_dstcn_ctc/files) |
+-
+-
+-Comparison between DS_TCN(Pretrained with Wenetspeech, 23 epoch, not converged)
+-and FSMN(Pretained with modelscope released xiaoyunxiaoyun model, fully converged).
+-FRRs with FAR fixed at once per 12 hours:
+-
+-| model                 | params(K)   | hi_xiaowen | nihao_wenwen | model ckpt                                                                    |
+-|-----------------------|-------------|------------|--------------|-------------------------------------------------------------------------------|
+-| DS_TCN(spec_aug)      | 955         | 0.056574   | 0.056856     | [dstcn-ctc](https://modelscope.cn/models/thuduj12/kws_wenwen_dstcn_ctc/files) |
+-| FSMN(spec_aug)        | 756         | 0.031012   | 0.022460     | [fsmn-ctc](https://modelscope.cn/models/thuduj12/kws_wenwen_fsmn_ctc/files) |
+-
+-Now, the DSTCN model with CTC loss may not get the best performance, because the
+-pretraining phase is not sufficiently converged. We recommend you use pretrained
+-FSMN model as initial checkpoint to train your own model.
+-
+-Comparison Between stream_score_ctc and score_ctc.
+-FRRs with FAR fixed at once per 12 hours:
+-
+-| model                 | stream      | hi_xiaowen | nihao_wenwen |
+-|-----------------------|-------------|------------|--------------|
+-| DS_TCN(spec_aug)      | no          | 0.056574   | 0.056856     |
+-| DS_TCN(spec_aug)      | yes         | 0.132694   | 0.057044     |
+-| FSMN(spec_aug)        | no          | 0.031012   | 0.022460     |
+-| FSMN(spec_aug)        | yes         | 0.115215   | 0.020205     |
+-
+-Note: when using CTC prefix beam search to detect keywords in streaming case(detect in each frame),
+-we record the probability of a keyword in a decoding path once the keyword appears in this path.
+-Actually the probability will increase through the time, so we record a lower value of probability,
+-which result in a higher False Rejection Rate in Detection Error Tradeoff result.
+-The actual FRR will be lower than the DET curve gives in a given threshold.
+-
+-On some small data KWS tasks, we believe the FSMN-CTC model is more robust
+-compared with the classification model using CE/Max-pooling loss.
+-For more infomation and results of FSMN-CTC KWS model, you can click [modelscope](https://modelscope.cn/models/damo/speech_charctc_kws_phone-wenwen/summary).
+-
+-For realtime CTC-KWS, we should process wave input on streaming-fashion,
+-include feature extraction, keyword decoding and detection and some postprocessing.
+-Here is a [demo](https://modelscope.cn/studios/thuduj12/KWS_Nihao_Xiaojing/summary) in python,
+-the core code is in wekws/bin/stream_kws_ctc.py, you can refer it to implement the runtime code.
+diff --git a/examples/hi_xiaowen/s0/conf/ds_tcn.yaml b/examples/hi_xiaowen/s0/conf/ds_tcn.yaml
+index 23ebbbe..c1daaca 100644
+--- a/examples/hi_xiaowen/s0/conf/ds_tcn.yaml
++++ b/examples/hi_xiaowen/s0/conf/ds_tcn.yaml
+@@ -24,6 +24,7 @@ dataset_conf:
+         batch_size: 256
+ 
+ model:
++    vocab_size: 176
+     hidden_dim: 256
+     preprocessing:
+         type: linear
+@@ -43,4 +44,4 @@ training_config:
+     grad_clip: 5
+     max_epoch: 80
+     log_interval: 10
+-
++    criterion: ctc_joint_loss
+diff --git a/examples/hi_xiaowen/s0/conf/ds_tcn_ctc.yaml b/examples/hi_xiaowen/s0/conf/ds_tcn_ctc.yaml
+deleted file mode 100644
+index ba7c716..0000000
+--- a/examples/hi_xiaowen/s0/conf/ds_tcn_ctc.yaml
++++ /dev/null
+@@ -1,50 +0,0 @@
+-dataset_conf:
+-    filter_conf:
+-        max_length: 2048
+-        min_length: 0
+-    resample_conf:
+-        resample_rate: 16000
+-    speed_perturb: false
+-    feature_extraction_conf:
+-        feature_type: 'fbank'
+-        num_mel_bins: 40
+-        frame_shift: 10
+-        frame_length: 25
+-        dither: 1.0
+-    spec_aug: true
+-    spec_aug_conf:
+-        num_t_mask: 1
+-        num_f_mask: 1
+-        max_t: 20
+-        max_f: 10
+-    shuffle: true
+-    shuffle_conf:
+-        shuffle_size: 1500
+-    batch_conf:
+-        batch_size: 256
+-
+-model:
+-    hidden_dim: 256
+-    preprocessing:
+-        type: linear
+-    backbone:
+-        type: tcn
+-        ds: true
+-        num_layers: 4
+-        kernel_size: 8
+-        dropout: 0.1
+-    activation:
+-        type: identity
+-
+-
+-optim: adam
+-optim_conf:
+-    lr: 0.001
+-    weight_decay: 0.0001
+-
+-training_config:
+-    grad_clip: 5
+-    max_epoch: 80
+-    log_interval: 10
+-    criterion: ctc
+-
+diff --git a/examples/hi_xiaowen/s0/conf/ds_tcn_ctc_base.yaml b/examples/hi_xiaowen/s0/conf/ds_tcn_ctc_base.yaml
+deleted file mode 100644
+index a97e9a4..0000000
+--- a/examples/hi_xiaowen/s0/conf/ds_tcn_ctc_base.yaml
++++ /dev/null
+@@ -1,50 +0,0 @@
+-dataset_conf:
+-    filter_conf:
+-        max_length: 2048
+-        min_length: 0
+-    resample_conf:
+-        resample_rate: 16000
+-    speed_perturb: false
+-    feature_extraction_conf:
+-        feature_type: 'fbank'
+-        num_mel_bins: 40
+-        frame_shift: 10
+-        frame_length: 25
+-        dither: 1.0
+-    spec_aug: true
+-    spec_aug_conf:
+-        num_t_mask: 1
+-        num_f_mask: 1
+-        max_t: 20
+-        max_f: 10
+-    shuffle: true
+-    shuffle_conf:
+-        shuffle_size: 1500
+-    batch_conf:
+-        batch_size: 200
+-
+-model:
+-    hidden_dim: 256
+-    preprocessing:
+-        type: linear
+-    backbone:
+-        type: tcn
+-        ds: true
+-        num_layers: 4
+-        kernel_size: 8
+-        dropout: 0.1
+-    activation:
+-        type: identity
+-
+-
+-optim: adam
+-optim_conf:
+-    lr: 0.001
+-    weight_decay: 0.0001
+-
+-training_config:
+-    grad_clip: 5
+-    max_epoch: 50
+-    log_interval: 100
+-    criterion: ctc
+-
+diff --git a/examples/hi_xiaowen/s0/conf/fsmn_ctc.yaml b/examples/hi_xiaowen/s0/conf/fsmn_ctc.yaml
+deleted file mode 100644
+index 5ce9596..0000000
+--- a/examples/hi_xiaowen/s0/conf/fsmn_ctc.yaml
++++ /dev/null
+@@ -1,64 +0,0 @@
+-dataset_conf:
+-    filter_conf:
+-        max_length: 2048
+-        min_length: 0
+-    resample_conf:
+-        resample_rate: 16000
+-    speed_perturb: false
+-    feature_extraction_conf:
+-        feature_type: 'fbank'
+-        num_mel_bins: 80
+-        frame_shift: 10
+-        frame_length: 25
+-        dither: 1.
+-    context_expansion: true
+-    context_expansion_conf:
+-        left: 2
+-        right: 2
+-    frame_skip: 3
+-    spec_aug: true
+-    spec_aug_conf:
+-        num_t_mask: 1
+-        num_f_mask: 1
+-        max_t: 20
+-        max_f: 10
+-    shuffle: true
+-    shuffle_conf:
+-        shuffle_size: 1500
+-    batch_conf:
+-        batch_size: 256
+-
+-model:
+-    input_dim: 400
+-    preprocessing:
+-        type: none
+-    hidden_dim: 128
+-    backbone:
+-        type: fsmn
+-        input_affine_dim: 140
+-        num_layers: 4
+-        linear_dim: 250
+-        proj_dim: 128
+-        left_order: 10
+-        right_order: 2
+-        left_stride: 1
+-        right_stride: 1
+-        output_affine_dim: 140
+-    classifier:
+-        type: identity
+-        dropout: 0.1
+-    activation:
+-        type: identity
+-
+-
+-optim: adam
+-optim_conf:
+-    lr: 0.001
+-    weight_decay: 0.0001
+-
+-training_config:
+-    grad_clip: 5
+-    max_epoch: 80
+-    log_interval: 10
+-    criterion: ctc
+-
+diff --git a/examples/hi_xiaowen/s0/conf/mdtc.yaml b/examples/hi_xiaowen/s0/conf/mdtc.yaml
+index 0e1b44a..a7e3ce8 100644
+--- a/examples/hi_xiaowen/s0/conf/mdtc.yaml
++++ b/examples/hi_xiaowen/s0/conf/mdtc.yaml
+@@ -6,9 +6,8 @@ dataset_conf:
+         resample_rate: 16000
+     speed_perturb: false
+     feature_extraction_conf:
+-        feature_type: 'mfcc'
+-        num_ceps: 80
+-        num_mel_bins: 80
++        feature_type: 'fbank'
++        num_mel_bins: 40
+         frame_shift: 10
+         frame_length: 25
+         dither: 1.0
+@@ -18,15 +17,16 @@ dataset_conf:
+         num_t_mask: 1
+         num_f_mask: 1
+         max_t: 20
+-        max_f: 40
++        max_f: 10
+     shuffle: true
+     shuffle_conf:
+         shuffle_size: 1500
+     batch_conf:
+-        batch_size: 100
++        batch_size: 256
+ 
+ model:
+-    hidden_dim: 64
++    vocab_size: 176
++    hidden_dim: 128
+     preprocessing:
+         type: linear
+     backbone:
+@@ -34,7 +34,7 @@ model:
+         num_stack: 4
+         stack_size: 4
+         kernel_size: 5
+-        hidden_dim: 64
++        hidden_dim: 128
+         causal: True
+ 
+ optim: adam
+@@ -45,3 +45,4 @@ training_config:
+     grad_clip: 5
+     max_epoch: 100
+     log_interval: 10
++    criterion: ctc_joint_loss
+diff --git a/examples/hi_xiaowen/s0/local/aishell_data_prep.sh b/examples/hi_xiaowen/s0/local/aishell_data_prep.sh
+new file mode 100644
+index 0000000..9aa3d3c
+--- /dev/null
++++ b/examples/hi_xiaowen/s0/local/aishell_data_prep.sh
+@@ -0,0 +1,74 @@
++#!/bin/bash
++
++# Copyright 2017 Xingyu Na
++# Apache 2.0
++
++. ./path.sh || exit 1;
++
++if [ $# != 2 ]; then
++  echo "Usage: $0 <audio-path> <text-path>"
++  echo " $0 /export/a05/xna/data/data_aishell/wav /export/a05/xna/data/data_aishell/transcript"
++  exit 1;
++fi
++
++aishell_audio_dir=$1
++aishell_text=$2/aishell_transcript_v0.8.txt
++
++train_dir=data/local/train
++dev_dir=data/local/dev
++test_dir=data/local/test
++tmp_dir=data/local/tmp
++
++mkdir -p $train_dir
++mkdir -p $dev_dir
++mkdir -p $test_dir
++mkdir -p $tmp_dir
++
++# data directory check
++if [ ! -d $aishell_audio_dir ] || [ ! -f $aishell_text ]; then
++  echo "Error: $0 requires two directory arguments"
++  exit 1;
++fi
++
++# find wav audio file for train, dev and test resp.
++find $aishell_audio_dir -iname "*.wav" > $tmp_dir/wav.flist
++n=`cat $tmp_dir/wav.flist | wc -l`
++[ $n -ne 141925 ] && \
++  echo Warning: expected 141925 data data files, found $n
++
++grep -i "wav/train" $tmp_dir/wav.flist > $train_dir/wav.flist || exit 1;
++grep -i "wav/dev" $tmp_dir/wav.flist > $dev_dir/wav.flist || exit 1;
++grep -i "wav/test" $tmp_dir/wav.flist > $test_dir/wav.flist || exit 1;
++
++rm -r $tmp_dir
++
++# Transcriptions preparation
++for dir in $train_dir $dev_dir $test_dir; do
++  echo Preparing $dir transcriptions
++  sed -e 's/\.wav//' $dir/wav.flist | awk -F '/' '{print $NF}' > $dir/utt.list
++  paste -d' ' $dir/utt.list $dir/wav.flist > $dir/wav.scp_all
++  tools/filter_scp.pl -f 1 $dir/utt.list $aishell_text > $dir/transcripts.txt
++  awk '{print $1}' $dir/transcripts.txt > $dir/utt.list
++  tools/filter_scp.pl -f 1 $dir/utt.list $dir/wav.scp_all | sort -u > $dir/wav.scp
++  sort -u $dir/transcripts.txt > $dir/text
++done
++
++<<<<<<< HEAD
++mkdir -p data_aishell/train data_aishell/dev data_aishell/test
++
++for f in wav.scp text; do
++  cp $train_dir/$f data_aishell/train/$f || exit 1;
++  cp $dev_dir/$f data_aishell/dev/$f || exit 1;
++  cp $test_dir/$f data_aishell/test/$f || exit 1;
++=======
++mkdir -p data_ctc/train data_ctc/dev data_ctc/test
++
++for f in wav.scp text; do
++  cp $train_dir/$f data_ctc/train/$f || exit 1;
++  cp $dev_dir/$f data_ctc/dev/$f || exit 1;
++  cp $test_dir/$f data_ctc/test/$f || exit 1;
++>>>>>>> update ctc
++done
++
++echo "$0: AISHELL data preparation succeeded"
++exit 0;
+\ No newline at end of file
+diff --git a/examples/hi_xiaowen/s0/local/char2pinyin.py b/examples/hi_xiaowen/s0/local/char2pinyin.py
+new file mode 100644
+index 0000000..f5bc9fd
+--- /dev/null
++++ b/examples/hi_xiaowen/s0/local/char2pinyin.py
+@@ -0,0 +1,16 @@
++from tqdm import tqdm
++from pypinyin import pinyin, Style
++from pypinyin.contrib.tone_convert import to_initials, to_finals_tone3
++
++
++txt_file = '/home/mlxu/github/wekws/examples/hi_xiaowen/s0/data_ctc/test/text'
++pinyin_file = '/home/mlxu/github/wekws/examples/hi_xiaowen/s0/data_ctc/test/text_pinyin'
++
++with open(txt_file) as f, open(pinyin_file, 'w') as f_w:
++    for line in tqdm(list(f.readlines())):
++        key, *words = line.strip().split()
++        pinyin_list = []
++        for word in words:
++            pinyin_list.extend(pinyin(word, style=Style.TONE3, heteronym=True))
++        pinyin_list = [to_initials(c[0]) + ' ' + to_finals_tone3(c[0]) for c in pinyin_list]
++        f_w.write(key + ' ' + ' '.join(pinyin_list) + '\n')
+\ No newline at end of file
+diff --git a/examples/hi_xiaowen/s0/local/generate_vocab.py b/examples/hi_xiaowen/s0/local/generate_vocab.py
+new file mode 100644
+index 0000000..6363909
+--- /dev/null
++++ b/examples/hi_xiaowen/s0/local/generate_vocab.py
+@@ -0,0 +1,42 @@
++'''
++@Author: Zhengkun Tian
++@Email: zhengkun.tian@outlook.com
++@Date: 2020-06-12 12:06:19
++@LastEditTime: 2020-06-12 14:56:44
++@FilePath: \OpenTransducer\egs\aishell\local\generate_vocab.py
++'''
++import os
++import sys
++
++
++if __name__ == '__main__':
++
++    text_in = sys.argv[1]
++    vocab_out = sys.argv[2]
++
++    lexicon = {}
++    with open(text_in, 'r', encoding='utf-8') as f:
++        for line in f:
++            parts = line.strip().split()
++            idx = parts[0]
++            phones = parts[1:]
++
++            for p in phones:
++                if p not in lexicon:
++                    lexicon[p] = 1
++                else:
++                    lexicon[p] += 1
++
++    print('There are %d label in lexicon!' % len(lexicon))
++
++    vocab = sorted(lexicon.items(), key=lambda x: x[1], reverse=True)
++
++    index = 2
++    with open(vocab_out, 'w') as w:
++        w.write('<blank> 0\n')
++        w.write('<UNK> 1\n')
++        for (l, n) in vocab:
++            w.write(l+' '+str(index)+'\n')
++            index += 1
++
++    print('Done!')
+\ No newline at end of file
+diff --git a/examples/hi_xiaowen/s0/local/merge.sh b/examples/hi_xiaowen/s0/local/merge.sh
+new file mode 100644
+index 0000000..ac6ef9b
+--- /dev/null
++++ b/examples/hi_xiaowen/s0/local/merge.sh
+@@ -0,0 +1,6 @@
++cat /home/mlxu/github/wekws/examples/hi_xiaowen/s0/data/dev_kws/text \
++    /home/mlxu/github/wekws/examples/hi_xiaowen/s0/data_ctc/dev/text_pinyin \
++    > /home/mlxu/github/wekws/examples/hi_xiaowen/s0/data/dev/text
++cat /home/mlxu/github/wekws/examples/hi_xiaowen/s0/data/dev_kws/wav.scp \
++    /home/mlxu/github/wekws/examples/hi_xiaowen/s0/data_ctc/dev/wav.scp \
++    > /home/mlxu/github/wekws/examples/hi_xiaowen/s0/data/dev/wav.scp
+\ No newline at end of file
+diff --git a/examples/hi_xiaowen/s0/local/untar.sh b/examples/hi_xiaowen/s0/local/untar.sh
+new file mode 100644
+index 0000000..19cd034
+--- /dev/null
++++ b/examples/hi_xiaowen/s0/local/untar.sh
+@@ -0,0 +1,105 @@
++#!/bin/bash
++
++# Copyright   2014  Johns Hopkins University (author: Daniel Povey)
++#             2017  Xingyu Na
++# Apache 2.0
++
++remove_archive=false
++
++if [ "$1" == --remove-archive ]; then
++  remove_archive=true
++  shift
++fi
++
++if [ $# -ne 3 ]; then
++  echo "Usage: $0 [--remove-archive] <data-base> <url-base> <corpus-part>"
++  echo "e.g.: $0 /export/a05/xna/data www.openslr.org/resources/33 data_aishell"
++  echo "With --remove-archive it will remove the archive after successfully un-tarring it."
++  echo "<corpus-part> can be one of: data_aishell, resource_aishell."
++fi
++
++data=$1
++url=$2
++part=$3
++
++if [ ! -d "$data" ]; then
++  echo "$0: no such directory $data"
++  exit 1;
++fi
++
++part_ok=false
++list="data_aishell resource_aishell"
++for x in $list; do
++  if [ "$part" == $x ]; then part_ok=true; fi
++done
++if ! $part_ok; then
++  echo "$0: expected <corpus-part> to be one of $list, but got '$part'"
++  exit 1;
++fi
++
++if [ -z "$url" ]; then
++  echo "$0: empty URL base."
++  exit 1;
++fi
++
++if [ -f $data/$part/.complete ]; then
++  echo "$0: data part $part was already successfully extracted, nothing to do."
++  exit 0;
++fi
++
++# sizes of the archive files in bytes.
++sizes="15582913665 1246920"
++
++if [ -f $data/$part.tgz ]; then
++  size=$(/bin/ls -l $data/$part.tgz | awk '{print $5}')
++  size_ok=false
++  for s in $sizes; do if [ $s == $size ]; then size_ok=true; fi; done
++  if ! $size_ok; then
++    echo "$0: removing existing file $data/$part.tgz because its size in bytes $size"
++    echo "does not equal the size of one of the archives."
++    rm $data/$part.tgz
++  else
++    echo "$data/$part.tgz exists and appears to be complete."
++  fi
++fi
++
++if [ ! -f $data/$part.tgz ]; then
++  if ! which wget >/dev/null; then
++    echo "$0: wget is not installed."
++    exit 1;
++  fi
++  full_url=$url/$part.tgz
++  echo "$0: downloading data from $full_url.  This may take some time, please be patient."
++
++  cd $data
++  if ! wget --no-check-certificate $full_url; then
++    echo "$0: error executing wget $full_url"
++    exit 1;
++  fi
++fi
++
++cd $data
++
++if ! tar -xvzf $part.tgz; then
++  echo "$0: error un-tarring archive $data/$part.tgz"
++  exit 1;
++fi
++
++touch $data/$part/.complete
++
++if [ $part == "data_aishell" ]; then
++  cd $data/$part/wav
++  for wav in ./*.tar.gz; do
++    echo "Extracting wav from $wav"
++    tar -zxf $wav && rm $wav
++  done
++fi
++
++echo "$0: Successfully downloaded and un-tarred $data/$part.tgz"
++
++if $remove_archive; then
++  echo "$0: removing $data/$part.tgz file since --remove-archive option was supplied."
++  rm $data/$part.tgz
++fi
++
++exit 0;
+\ No newline at end of file
+diff --git a/examples/hi_xiaowen/s0/run.sh b/examples/hi_xiaowen/s0/run.sh
+index f1ab06c..b6e163d 100755
+--- a/examples/hi_xiaowen/s0/run.sh
++++ b/examples/hi_xiaowen/s0/run.sh
+@@ -3,22 +3,23 @@
+ 
+ . ./path.sh
+ 
+-stage=$1
+-stop_stage=$2
++stage=2
++stop_stage=2
+ num_keywords=2
+ 
+ config=conf/ds_tcn.yaml
++symbol_table=/home/mlxu/github/wekws/examples/hey_snips/s0/data/symbol_table
+ norm_mean=true
+ norm_var=true
+-gpus="0,1"
++gpus="1,2"
+ 
+ checkpoint=
+-dir=exp/ds_tcn
++dir=exp/mdtc
+ 
+ num_average=30
+ score_checkpoint=$dir/avg_${num_average}.pt
+ 
+-download_dir=./data/local # your data dir
++download_dir=/home/mlxu/data # your data dir
+ 
+ . tools/parse_options.sh || exit 1;
+ window_shift=50
+@@ -82,6 +83,7 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
+       --num_keywords $num_keywords \
+       --min_duration 50 \
+       --seed 666 \
++      --symbol_table $symbol_table \
+       $cmvn_opts \
+       ${checkpoint:+--checkpoint $checkpoint}
+ fi
+@@ -98,11 +100,12 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
+   python wekws/bin/score.py \
+     --config $dir/config.yaml \
+     --test_data data/test/data.list \
+-    --gpu 0 \
+     --batch_size 256 \
+     --checkpoint $score_checkpoint \
+     --score_file $result_dir/score.txt  \
+-    --num_workers 8
++    --num_workers 8 \
++    --gpu 1 \
++    --prefetch 200
+ 
+   for keyword in 0 1; do
+     python wekws/bin/compute_det.py \
+@@ -112,12 +115,6 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
+       --score_file $result_dir/score.txt \
+       --stats_file $result_dir/stats.${keyword}.txt
+   done
+-
+-  # plot det curve
+-  python wekws/bin/plot_det_curve.py \
+-      --keywords_dict dict/words.txt \
+-      --stats_dir  $result_dir \
+-      --figure_file $result_dir/det.png
+ fi
+ 
+ 
+diff --git a/examples/hi_xiaowen/s0/run_ctc.sh b/examples/hi_xiaowen/s0/run_ctc.sh
+deleted file mode 100644
+index 647d6ae..0000000
+--- a/examples/hi_xiaowen/s0/run_ctc.sh
++++ /dev/null
+@@ -1,223 +0,0 @@
+-#!/bin/bash
+-# Copyright 2021  Binbin Zhang(binbzha@qq.com)
+-#           2023  Jing Du(thuduj12@163.com)
+-
+-. ./path.sh
+-
+-stage=$1
+-stop_stage=$2
+-num_keywords=2599
+-
+-config=conf/ds_tcn_ctc.yaml
+-norm_mean=true
+-norm_var=true
+-gpus="0"
+-
+-checkpoint=
+-dir=exp/ds_tcn_ctc
+-average_model=true
+-num_average=30
+-if $average_model ;then
+-  score_checkpoint=$dir/avg_${num_average}.pt
+-else
+-  score_checkpoint=$dir/final.pt
+-fi
+-
+-download_dir=/mnt/52_disk/back/DuJing/data/nihaowenwen # your data dir
+-
+-. tools/parse_options.sh || exit 1;
+-window_shift=50
+-
+-#Whether to train base model. If set true, must put train+dev data in trainbase_dir
+-trainbase=false
+-trainbase_dir=data/base
+-trainbase_config=conf/ds_tcn_ctc_base.yaml
+-trainbase_exp=exp/base
+-
+-if [ ${stage} -le -3 ] && [ ${stop_stage} -ge -3 ]; then
+-  echo "Download and extracte all datasets"
+-  local/mobvoi_data_download.sh --dl_dir $download_dir
+-fi
+-
+-
+-if [ ${stage} -le -2 ] && [ ${stop_stage} -ge -2 ]; then
+-  echo "Preparing datasets..."
+-  mkdir -p dict
+-  echo "<filler> -1" > dict/words.txt
+-  echo "Hi_Xiaowen 0" >> dict/words.txt
+-  echo "Nihao_Wenwen 1" >> dict/words.txt
+-
+-  for folder in train dev test; do
+-    mkdir -p data/$folder
+-    for prefix in p n; do
+-      mkdir -p data/${prefix}_$folder
+-      json_path=$download_dir/mobvoi_hotword_dataset_resources/${prefix}_$folder.json
+-      local/prepare_data.py $download_dir/mobvoi_hotword_dataset $json_path \
+-        data/${prefix}_$folder
+-    done
+-    cat data/p_$folder/wav.scp data/n_$folder/wav.scp > data/$folder/wav.scp
+-    cat data/p_$folder/text data/n_$folder/text > data/$folder/text
+-    rm -rf data/p_$folder data/n_$folder
+-  done
+-fi
+-
+-if [ ${stage} -le -1 ] && [ ${stop_stage} -ge -1 ]; then
+-# Here we Use Paraformer Large(https://www.modelscope.cn/models/damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch/summary)
+-# to transcribe the negative wavs, and upload the transcription to modelscope.
+-  git clone https://www.modelscope.cn/datasets/thuduj12/mobvoi_kws_transcription.git
+-  for folder in train dev test; do
+-    if [ -f data/$folder/text ];then
+-      mv data/$folder/text data/$folder/text.label
+-    fi
+-    cp mobvoi_kws_transcription/$folder.text data/$folder/text
+-  done
+-
+-  # and we also copy the tokens and lexicon that used in
+-  # https://modelscope.cn/models/damo/speech_charctc_kws_phone-xiaoyun/summary
+-  cp mobvoi_kws_transcription/tokens.txt data/tokens.txt
+-  cp mobvoi_kws_transcription/lexicon.txt data/lexicon.txt
+-
+-fi
+-
+-if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
+-  echo "Compute CMVN and Format datasets"
+-  tools/compute_cmvn_stats.py --num_workers 16 --train_config $config \
+-    --in_scp data/train/wav.scp \
+-    --out_cmvn data/train/global_cmvn
+-
+-  for x in train dev test; do
+-    tools/wav_to_duration.sh --nj 8 data/$x/wav.scp data/$x/wav.dur
+-
+-    # Here we use tokens.txt and lexicon.txt to convert txt into index
+-    tools/make_list.py data/$x/wav.scp data/$x/text \
+-      data/$x/wav.dur data/$x/data.list  \
+-      --token_file data/tokens.txt \
+-      --lexicon_file data/lexicon.txt
+-  done
+-fi
+-
+-if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ] && [ $trainbase == true ]; then
+-  for x in train dev ; do
+-    if [ ! -f $trainbase_dir/$x/wav.scp ] || [ ! -f $trainbase_dir/$x/text ]; then
+-      echo "If You Want to Train Base KWS-CTC Model, You Should Prepare ASR Data by Yourself."
+-      echo "The wav.scp and text in KALDI-format is Needed, You Should Put Them in $trainbase_dir/$x"
+-      exit
+-    fi
+-    if [ ! -f $trainbase_dir/$x/wav.dur ]; then
+-      tools/wav_to_duration.sh --nj 128 $trainbase_dir/$x/wav.scp $trainbase_dir/$x/wav.dur
+-    fi
+-
+-    # Here we use tokens.txt and lexicon.txt to convert txt into index
+-    if [ ! -f $trainbase_dir/$x/data.list ]; then
+-      tools/make_list.py $trainbase_dir/$x/wav.scp $trainbase_dir/$x/text \
+-          $trainbase_dir/$x/wav.dur $trainbase_dir/$x/data.list  \
+-          --token_file data/tokens.txt \
+-          --lexicon_file data/lexicon.txt
+-    fi
+-  done
+-
+-  echo "Start base training ..."
+-  mkdir -p $trainbase_exp
+-  cmvn_opts=
+-  $norm_mean && cmvn_opts="--cmvn_file data/train/global_cmvn"
+-  $norm_var && cmvn_opts="$cmvn_opts --norm_var"
+-  num_gpus=$(echo $gpus | awk -F ',' '{print NF}')
+-  torchrun --standalone --nnodes=1 --nproc_per_node=$num_gpus \
+-    wekws/bin/train.py --gpus $gpus \
+-      --config $trainbase_config \
+-      --train_data $trainbase_dir/train/data.list \
+-      --cv_data $trainbase_dir/dev/data.list \
+-      --model_dir $trainbase_exp \
+-      --num_workers 2 \
+-      --ddp.dist_backend nccl \
+-      --num_keywords $num_keywords \
+-      --min_duration 50 \
+-      --seed 666 \
+-      $cmvn_opts # \
+-      #--checkpoint $trainbase_exp/23.pt
+-fi
+-
+-if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
+-  echo "Start training ..."
+-  mkdir -p $dir
+-  cmvn_opts=
+-  $norm_mean && cmvn_opts="--cmvn_file data/train/global_cmvn"
+-  $norm_var && cmvn_opts="$cmvn_opts --norm_var"
+-  num_gpus=$(echo $gpus | awk -F ',' '{print NF}')
+-
+-  if $trainbase; then
+-    echo "Use the base model you trained as checkpoint: $trainbase_exp/final.pt"
+-    checkpoint=$trainbase_exp/final.pt
+-  else
+-    echo "Use the base model trained with WenetSpeech as checkpoint: mobvoi_kws_transcription/23.pt"
+-    if [ ! -d mobvoi_kws_transcription ] ;then
+-      git clone https://www.modelscope.cn/datasets/thuduj12/mobvoi_kws_transcription.git
+-    fi
+-    checkpoint=mobvoi_kws_transcription/23.pt    # this ckpt may not converge well.
+-  fi
+-
+-  torchrun --standalone --nnodes=1 --nproc_per_node=$num_gpus \
+-    wekws/bin/train.py --gpus $gpus \
+-      --config $config \
+-      --train_data data/train/data.list \
+-      --cv_data data/dev/data.list \
+-      --model_dir $dir \
+-      --num_workers 8 \
+-      --num_keywords $num_keywords \
+-      --min_duration 50 \
+-      --seed 666 \
+-      $cmvn_opts \
+-      ${checkpoint:+--checkpoint $checkpoint}
+-fi
+-
+-if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
+-  echo "Do model average, Compute FRR/FAR ..."
+-  if $average_model; then
+-    python wekws/bin/average_model.py \
+-      --dst_model $score_checkpoint \
+-      --src_path $dir  \
+-      --num ${num_average} \
+-      --val_best
+-  fi
+-  result_dir=$dir/test_$(basename $score_checkpoint)
+-  mkdir -p $result_dir
+-  stream=true  # we detect keyword online with ctc_prefix_beam_search
+-  score_prefix=""
+-  if $stream ; then
+-    score_prefix=stream_
+-  fi
+-  python wekws/bin/${score_prefix}score_ctc.py \
+-    --config $dir/config.yaml \
+-    --test_data data/test/data.list \
+-    --gpu 0  \
+-    --batch_size 256 \
+-    --checkpoint $score_checkpoint \
+-    --score_file $result_dir/score.txt  \
+-    --num_workers 8  \
+-    --keywords "\u55e8\u5c0f\u95ee,\u4f60\u597d\u95ee\u95ee" \
+-    --token_file data/tokens.txt \
+-    --lexicon_file data/lexicon.txt
+-
+-  python wekws/bin/compute_det_ctc.py \
+-      --keywords "\u55e8\u5c0f\u95ee,\u4f60\u597d\u95ee\u95ee" \
+-      --test_data data/test/data.list \
+-      --window_shift $window_shift \
+-      --step 0.001  \
+-      --score_file $result_dir/score.txt \
+-      --token_file data/tokens.txt \
+-      --lexicon_file data/lexicon.txt
+-fi
+-
+-
+-if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
+-  jit_model=$(basename $score_checkpoint | sed -e 's:.pt$:.zip:g')
+-  onnx_model=$(basename $score_checkpoint | sed -e 's:.pt$:.onnx:g')
+-  python wekws/bin/export_jit.py \
+-    --config $dir/config.yaml \
+-    --checkpoint $score_checkpoint \
+-    --jit_model $dir/$jit_model
+-  python wekws/bin/export_onnx.py \
+-    --config $dir/config.yaml \
+-    --checkpoint $score_checkpoint \
+-    --onnx_model $dir/$onnx_model
+-fi
+diff --git a/examples/hi_xiaowen/s0/run_fsmn_ctc.sh b/examples/hi_xiaowen/s0/run_fsmn_ctc.sh
+deleted file mode 100644
+index 18b1d08..0000000
+--- a/examples/hi_xiaowen/s0/run_fsmn_ctc.sh
++++ /dev/null
+@@ -1,175 +0,0 @@
+-#!/bin/bash
+-# Copyright 2021  Binbin Zhang(binbzha@qq.com)
+-#           2023  Jing Du(thuduj12@163.com)
+-
+-. ./path.sh
+-
+-stage=$1
+-stop_stage=$2
+-num_keywords=2599
+-
+-config=conf/fsmn_ctc.yaml
+-norm_mean=true
+-norm_var=true
+-gpus="0"
+-
+-checkpoint=
+-dir=exp/fsmn_ctc
+-average_model=true
+-num_average=30
+-if $average_model ;then
+-  score_checkpoint=$dir/avg_${num_average}.pt
+-else
+-  score_checkpoint=$dir/final.pt
+-fi
+-
+-download_dir=/mnt/52_disk/back/DuJing/data/nihaowenwen # your data dir
+-
+-. tools/parse_options.sh || exit 1;
+-window_shift=50
+-
+-if [ ${stage} -le -2 ] && [ ${stop_stage} -ge -2 ]; then
+-  echo "Download and extracte all datasets"
+-  local/mobvoi_data_download.sh --dl_dir $download_dir
+-fi
+-
+-
+-if [ ${stage} -le -1 ] && [ ${stop_stage} -ge -1 ]; then
+-  echo "Preparing datasets..."
+-  mkdir -p dict
+-  echo "<filler> -1" > dict/words.txt
+-  echo "Hi_Xiaowen 0" >> dict/words.txt
+-  echo "Nihao_Wenwen 1" >> dict/words.txt
+-
+-  for folder in train dev test; do
+-    mkdir -p data/$folder
+-    for prefix in p n; do
+-      mkdir -p data/${prefix}_$folder
+-      json_path=$download_dir/mobvoi_hotword_dataset_resources/${prefix}_$folder.json
+-      local/prepare_data.py $download_dir/mobvoi_hotword_dataset $json_path \
+-        data/${prefix}_$folder
+-    done
+-    cat data/p_$folder/wav.scp data/n_$folder/wav.scp > data/$folder/wav.scp
+-    cat data/p_$folder/text data/n_$folder/text > data/$folder/text
+-    rm -rf data/p_$folder data/n_$folder
+-  done
+-fi
+-
+-if [ ${stage} -le -0 ] && [ ${stop_stage} -ge -0 ]; then
+-# Here we Use Paraformer Large(https://www.modelscope.cn/models/damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch/summary)
+-# to transcribe the negative wavs, and upload the transcription to modelscope.
+-  git clone https://www.modelscope.cn/datasets/thuduj12/mobvoi_kws_transcription.git
+-  for folder in train dev test; do
+-    if [ -f data/$folder/text ];then
+-      mv data/$folder/text data/$folder/text.label
+-    fi
+-    cp mobvoi_kws_transcription/$folder.text data/$folder/text
+-  done
+-
+-  # and we also copy the tokens and lexicon that used in
+-  # https://modelscope.cn/models/damo/speech_charctc_kws_phone-xiaoyun/summary
+-  cp mobvoi_kws_transcription/tokens.txt data/tokens.txt
+-  cp mobvoi_kws_transcription/lexicon.txt data/lexicon.txt
+-
+-fi
+-
+-if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
+-  echo "Compute CMVN and Format datasets"
+-  tools/compute_cmvn_stats.py --num_workers 16 --train_config $config \
+-    --in_scp data/train/wav.scp \
+-    --out_cmvn data/train/global_cmvn
+-
+-  for x in train dev test; do
+-    tools/wav_to_duration.sh --nj 8 data/$x/wav.scp data/$x/wav.dur
+-
+-    # Here we use tokens.txt and lexicon.txt to convert txt into index
+-    tools/make_list.py data/$x/wav.scp data/$x/text \
+-      data/$x/wav.dur data/$x/data.list  \
+-      --token_file data/tokens.txt \
+-      --lexicon_file data/lexicon.txt
+-  done
+-fi
+-
+-if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
+-
+-  echo "Use the base model from modelscope"
+-  if [ ! -d speech_charctc_kws_phone-xiaoyun ] ;then
+-      git lfs install
+-      git clone https://www.modelscope.cn/damo/speech_charctc_kws_phone-xiaoyun.git
+-  fi
+-  checkpoint=speech_charctc_kws_phone-xiaoyun/train/base.pt
+-  cp speech_charctc_kws_phone-xiaoyun/train/feature_transform.txt.80dim-l2r2 data/global_cmvn.kaldi
+-
+-  echo "Start training ..."
+-  mkdir -p $dir
+-  cmvn_opts=
+-  $norm_mean && cmvn_opts="--cmvn_file data/global_cmvn.kaldi"
+-  $norm_var && cmvn_opts="$cmvn_opts --norm_var"
+-  num_gpus=$(echo $gpus | awk -F ',' '{print NF}')
+-
+-  torchrun --standalone --nnodes=1 --nproc_per_node=$num_gpus \
+-    wekws/bin/train.py --gpus $gpus \
+-      --config $config \
+-      --train_data data/train/data.list \
+-      --cv_data data/dev/data.list \
+-      --model_dir $dir \
+-      --num_workers 8 \
+-      --num_keywords $num_keywords \
+-      --min_duration 50 \
+-      --seed 666 \
+-      $cmvn_opts \
+-      ${checkpoint:+--checkpoint $checkpoint}
+-fi
+-
+-if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
+-  echo "Do model average, Compute FRR/FAR ..."
+-  if $average_model; then
+-    python wekws/bin/average_model.py \
+-      --dst_model $score_checkpoint \
+-      --src_path $dir  \
+-      --num ${num_average} \
+-      --val_best
+-  fi
+-  result_dir=$dir/test_$(basename $score_checkpoint)
+-  mkdir -p $result_dir
+-  stream=true   # we detect keyword online with ctc_prefix_beam_search
+-  score_prefix=""
+-  if $stream ; then
+-    score_prefix=stream_
+-  fi
+-  python wekws/bin/${score_prefix}score_ctc.py \
+-    --config $dir/config.yaml \
+-    --test_data data/test/data.list \
+-    --gpu 0  \
+-    --batch_size 256 \
+-    --checkpoint $score_checkpoint \
+-    --score_file $result_dir/score.txt  \
+-    --num_workers 8  \
+-    --keywords "\u55e8\u5c0f\u95ee,\u4f60\u597d\u95ee\u95ee" \
+-    --token_file data/tokens.txt \
+-    --lexicon_file data/lexicon.txt
+-
+-  python wekws/bin/compute_det_ctc.py \
+-      --keywords "\u55e8\u5c0f\u95ee,\u4f60\u597d\u95ee\u95ee" \
+-      --test_data data/test/data.list \
+-      --window_shift $window_shift \
+-      --step 0.001  \
+-      --score_file $result_dir/score.txt \
+-      --token_file data/tokens.txt \
+-      --lexicon_file data/lexicon.txt
+-fi
+-
+-
+-if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
+-  jit_model=$(basename $score_checkpoint | sed -e 's:.pt$:.zip:g')
+-  onnx_model=$(basename $score_checkpoint | sed -e 's:.pt$:.onnx:g')
+-  # For now, FSMN can not export to JITScript
+-#  python wekws/bin/export_jit.py \
+-#    --config $dir/config.yaml \
+-#    --checkpoint $score_checkpoint \
+-#    --jit_model $dir/$jit_model
+-  python wekws/bin/export_onnx.py \
+-    --config $dir/config.yaml \
+-    --checkpoint $score_checkpoint \
+-    --onnx_model $dir/$onnx_model
+-fi
+diff --git a/examples/hi_xiaowen/s0/test.sh b/examples/hi_xiaowen/s0/test.sh
+new file mode 100755
+index 0000000..f82a11d
+--- /dev/null
++++ b/examples/hi_xiaowen/s0/test.sh
+@@ -0,0 +1,132 @@
++#!/bin/bash
++# Copyright 2021  Binbin Zhang(binbzha@qq.com)
++
++. ./path.sh
++
++stage=3
++stop_stage=3
++num_keywords=2
++
++config=conf/mdtc.yaml
++symbol_table=/home/mlxu/github/wekws/examples/hey_snips/s0/data/symbol_table
++norm_mean=true
++norm_var=true
++gpus="0,1"
++
++checkpoint=/home/mlxu/github/wekws/examples/hi_xiaowen/s0/exp/mdtc/17.pt
++dir=exp/mdtc
++
++num_average=30
++score_checkpoint=$dir/avg_${num_average}.pt
++
++download_dir=/home/mlxu/data # your data dir
++
++. tools/parse_options.sh || exit 1;
++window_shift=50
++
++if [ ${stage} -le -1 ] && [ ${stop_stage} -ge -1 ]; then
++  echo "Download and extracte all datasets"
++  local/mobvoi_data_download.sh --dl_dir $download_dir
++fi
++
++
++if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
++  echo "Preparing datasets..."
++  mkdir -p dict
++  echo "<filler> -1" > dict/words.txt
++  echo "Hi_Xiaowen 0" >> dict/words.txt
++  echo "Nihao_Wenwen 1" >> dict/words.txt
++
++  for folder in train dev test; do
++    mkdir -p data/$folder
++    for prefix in p n; do
++      mkdir -p data/${prefix}_$folder
++      json_path=$download_dir/mobvoi_hotword_dataset_resources/${prefix}_$folder.json
++      local/prepare_data.py $download_dir/mobvoi_hotword_dataset $json_path \
++        data/${prefix}_$folder
++    done
++    cat data/p_$folder/wav.scp data/n_$folder/wav.scp > data/$folder/wav.scp
++    cat data/p_$folder/text data/n_$folder/text > data/$folder/text
++    rm -rf data/p_$folder data/n_$folder
++  done
++fi
++
++
++if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
++  echo "Compute CMVN and Format datasets"
++  tools/compute_cmvn_stats.py --num_workers 16 --train_config $config \
++    --in_scp data/train/wav.scp \
++    --out_cmvn data/train/global_cmvn
++
++  for x in train dev test; do
++    tools/wav_to_duration.sh --nj 8 data/$x/wav.scp data/$x/wav.dur
++    tools/make_list.py data/$x/wav.scp data/$x/text \
++      data/$x/wav.dur data/$x/data.list
++  done
++fi
++
++
++if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
++  echo "Start training ..."
++  mkdir -p $dir
++  cmvn_opts=
++  $norm_mean && cmvn_opts="--cmvn_file data/train/global_cmvn"
++  $norm_var && cmvn_opts="$cmvn_opts --norm_var"
++  num_gpus=$(echo $gpus | awk -F ',' '{print NF}')
++  torchrun --standalone --nnodes=1 --nproc_per_node=$num_gpus \
++    wekws/bin/train.py --gpus $gpus \
++      --config $config \
++      --train_data data/train/data.list \
++      --cv_data data/dev/data.list \
++      --model_dir $dir \
++      --num_workers 8 \
++      --num_keywords $num_keywords \
++      --min_duration 50 \
++      --seed 666 \
++      --symbol_table $symbol_table \
++      $cmvn_opts \
++      ${checkpoint:+--checkpoint $checkpoint}
++fi
++
++if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
++  echo "Do model average, Compute FRR/FAR ..."
++  # python wekws/bin/average_model.py \
++  #   --dst_model $score_checkpoint \
++  #   --src_path $dir  \
++  #   --num ${num_average} \
++  #   --val_best
++  result_dir=$dir/test_ctc
++  mkdir -p $result_dir
++  python wekws/bin/ctc_decode.py \
++    --config $dir/config.yaml \
++    --test_data data/dev/data.list \
++    --batch_size 2 \
++    --checkpoint $score_checkpoint \
++    --score_file $result_dir/score.txt  \
++    --num_workers 8 \
++    --gpu 2 \
++    --prefetch 200
++
++  # for keyword in 0 1; do
++  #   python wekws/bin/compute_det.py \
++  #     --keyword $keyword \
++  #     --test_data data/test/data.list \
++  #     --window_shift $window_shift \
++  #     --score_file $result_dir/score.txt \
++  #     --stats_file $result_dir/stats.${keyword}.txt
++  # done
++fi
++
++
++if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
++  jit_model=$(basename $score_checkpoint | sed -e 's:.pt$:.zip:g')
++  onnx_model=$(basename $score_checkpoint | sed -e 's:.pt$:.onnx:g')
++  python wekws/bin/export_jit.py \
++    --config $dir/config.yaml \
++    --checkpoint $score_checkpoint \
++    --jit_model $dir/$jit_model
++  python wekws/bin/export_onnx.py \
++    --config $dir/config.yaml \
++    --checkpoint $score_checkpoint \
++    --onnx_model $dir/$onnx_model
++fi
+diff --git a/runtime/android/app/src/main/cpp/wekws.cc b/runtime/android/app/src/main/cpp/wekws.cc
+index 18ea8e6..d1dba2a 100644
+--- a/runtime/android/app/src/main/cpp/wekws.cc
++++ b/runtime/android/app/src/main/cpp/wekws.cc
+@@ -41,7 +41,6 @@ void reset(JNIEnv* env, jobject) {
+   offset = 0;
+   result = "";
+   spotter->Reset();
+-  feature_pipeline->Reset();
+ }
+ 
+ void accept_waveform(JNIEnv* env, jobject, jshortArray jWaveform) {
+@@ -49,8 +48,6 @@ void accept_waveform(JNIEnv* env, jobject, jshortArray jWaveform) {
+   int16_t* waveform = env->GetShortArrayElements(jWaveform, 0);
+   std::vector<int16_t> v(waveform, waveform + size);
+   feature_pipeline->AcceptWaveform(v);
+-  env->ReleaseShortArrayElements(jWaveform, waveform, 0);
+-
+   LOG(INFO) << "wekws accept waveform in ms: " << int(size / 16);
+ }
+ 
+@@ -59,29 +56,8 @@ void set_input_finished() {
+   feature_pipeline->set_input_finished();
+ }
+ 
+-// void spot_thread_func() {
+-//   while (true) {
+-//     std::vector<std::vector<float>> feats;
+-//     feature_pipeline->Read(80, &feats);
+-//     std::vector<std::vector<float>> prob;
+-//     spotter->Forward(feats, &prob);
+-//     float max_prob = 0.0;
+-//     for (int t = 0; t < prob.size(); t++) {
+-//       for (int j = 0; j < prob[t].size(); j++) {
+-//         max_prob = std::max(prob[t][j], max_prob);
+-//       }
+-//     }
+-//     result = std::to_string(offset) + " prob: " + std::to_string(max_prob);
+-//     offset += prob.size();
+-//   }
+-// }
+-
+-// void start_spot() {
+-//   std::thread decode_thread(spot_thread_func);
+-//   decode_thread.detach();
+-// }
+-
+-void start_spot() {
++void spot_thread_func() {
++  while (true) {
+     std::vector<std::vector<float>> feats;
+     feature_pipeline->Read(80, &feats);
+     std::vector<std::vector<float>> prob;
+@@ -94,6 +70,12 @@ void start_spot() {
+     }
+     result = std::to_string(offset) + " prob: " + std::to_string(max_prob);
+     offset += prob.size();
++  }
++}
++
++void start_spot() {
++  std::thread decode_thread(spot_thread_func);
++  decode_thread.detach();
+ }
+ 
+ jstring get_result(JNIEnv* env, jobject) {
+diff --git a/runtime/android/app/src/main/java/cn/org/wenet/wekws/MainActivity.java b/runtime/android/app/src/main/java/cn/org/wenet/wekws/MainActivity.java
+index 862d0a7..c3dc31c 100644
+--- a/runtime/android/app/src/main/java/cn/org/wenet/wekws/MainActivity.java
++++ b/runtime/android/app/src/main/java/cn/org/wenet/wekws/MainActivity.java
+@@ -101,12 +101,12 @@ public class MainActivity extends AppCompatActivity {
+             if (!startRecord) {
+                 startRecord = true;
+                 startRecordThread();
+-                startAcceptWaveThread();
+                 startSpotThread();
++                Spot.reset();
++                Spot.startSpot();
+                 button.setText("Stop Record");
+             } else {
+                 startRecord = false;
+-                Spot.setInputFinished();
+                 button.setText("Start Record");
+             }
+         });
+@@ -191,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
+         return energy;
+     }
+ 
+-    private void startAcceptWaveThread() {
++    private void startSpotThread() {
+         new Thread(() -> {
+             // Send all data
+             while (startRecord || bufferQueue.size() > 0) {
+@@ -210,15 +210,4 @@ public class MainActivity extends AppCompatActivity {
+             }
+         }).start();
+     }
+-
+-    private void startSpotThread() {
+-        new Thread(() -> {
+-            Spot.reset();
+-            // Send all data
+-            while (startRecord) {
+-                Spot.startSpot();
+-                Log.i(LOG_TAG, Spot.getResult());
+-            }
+-        }).start();
+-    }
+ }
+diff --git a/tools/filter_scp.pl b/tools/filter_scp.pl
+new file mode 100755
+index 0000000..904db86
+--- /dev/null
++++ b/tools/filter_scp.pl
+@@ -0,0 +1,87 @@
++#!/usr/bin/env perl
++# Copyright 2010-2012 Microsoft Corporation
++#                     Johns Hopkins University (author: Daniel Povey)
++
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#  http://www.apache.org/licenses/LICENSE-2.0
++#
++# THIS CODE IS PROVIDED *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++# KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
++# WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
++# MERCHANTABLITY OR NON-INFRINGEMENT.
++# See the Apache 2 License for the specific language governing permissions and
++# limitations under the License.
++
++
++# This script takes a list of utterance-ids or any file whose first field
++# of each line is an utterance-id, and filters an scp
++# file (or any file whose "n-th" field is an utterance id), printing
++# out only those lines whose "n-th" field is in id_list. The index of
++# the "n-th" field is 1, by default, but can be changed by using
++# the -f <n> switch
++
++$exclude = 0;
++$field = 1;
++$shifted = 0;
++
++do {
++  $shifted=0;
++  if ($ARGV[0] eq "--exclude") {
++    $exclude = 1;
++    shift @ARGV;
++    $shifted=1;
++  }
++  if ($ARGV[0] eq "-f") {
++    $field = $ARGV[1];
++    shift @ARGV; shift @ARGV;
++    $shifted=1
++  }
++} while ($shifted);
++
++if(@ARGV < 1 || @ARGV > 2) {
++  die "Usage: filter_scp.pl [--exclude] [-f <field-to-filter-on>] id_list [in.scp] > out.scp \n" .
++      "Prints only the input lines whose f'th field (default: first) is in 'id_list'.\n" .
++      "Note: only the first field of each line in id_list matters.  With --exclude, prints\n" .
++      "only the lines that were *not* in id_list.\n" .
++      "Caution: previously, the -f option was interpreted as a zero-based field index.\n" .
++      "If your older scripts (written before Oct 2014) stopped working and you used the\n" .
++      "-f option, add 1 to the argument.\n" .
++      "See also: utils/filter_scp.pl .\n";
++}
++
++
++$idlist = shift @ARGV;
++open(F, "<$idlist") || die "Could not open id-list file $idlist";
++while(<F>) {
++  @A = split;
++  @A>=1 || die "Invalid id-list file line $_";
++  $seen{$A[0]} = 1;
++}
++
++if ($field == 1) { # Treat this as special case, since it is common.
++  while(<>) {
++    $_ =~ m/\s*(\S+)\s*/ || die "Bad line $_, could not get first field.";
++    # $1 is what we filter on.
++    if ((!$exclude && $seen{$1}) || ($exclude && !defined $seen{$1})) {
++      print $_;
++    }
++  }
++} else {
++  while(<>) {
++    @A = split;
++    @A > 0 || die "Invalid scp file line $_";
++    @A >= $field || die "Invalid scp file line $_";
++    if ((!$exclude && $seen{$A[$field-1]}) || ($exclude && !defined $seen{$A[$field-1]})) {
++      print $_;
++    }
++  }
++}
++
++# tests:
++# the following should print "foo 1"
++# ( echo foo 1; echo bar 2 ) | utils/filter_scp.pl <(echo foo)
++# the following should print "bar 2".
++# ( echo foo 1; echo bar 2 ) | utils/filter_scp.pl -f 2 <(echo 2)
+\ No newline at end of file
+diff --git a/tools/make_list.py b/tools/make_list.py
+index 76b55cf..ff78a45 100755
+--- a/tools/make_list.py
++++ b/tools/make_list.py
+@@ -1,7 +1,6 @@
+ #!/usr/bin/env python3
+ 
+ # Copyright (c) 2021 Mobvoi Inc. (authors: Binbin Zhang)
+-#               2023 Jing Du(thuduj12@163.com)
+ #
+ # Licensed under the Apache License, Version 2.0 (the "License");
+ # you may not use this file except in compliance with the License.
+@@ -16,145 +15,7 @@
+ # limitations under the License.
+ 
+ import argparse
+-import logging
+ import json
+-import re
+-
+-symbol_str = '[’!"#$%&\'()*+,-./:;<>=?@，。?★、…【】《》？“”‘’！[\\]^_`{|}~]+'
+-
+-def split_mixed_label(input_str):
+-    tokens = []
+-    s = input_str.lower()
+-    while len(s) > 0:
+-        match = re.match(r'[A-Za-z!?,<>()\']+', s)
+-        if match is not None:
+-            word = match.group(0)
+-        else:
+-            word = s[0:1]
+-        tokens.append(word)
+-        s = s.replace(word, '', 1).strip(' ')
+-    return tokens
+-
+-def query_token_set(txt, symbol_table, lexicon_table):
+-    tokens_str = tuple()
+-    tokens_idx = tuple()
+-
+-    parts = split_mixed_label(txt)
+-    for part in parts:
+-        if part == '!sil' or part == '(sil)' or part == '<sil>':
+-            tokens_str = tokens_str + ('!sil', )
+-        elif part == '<blk>' or part == '<blank>':
+-            tokens_str = tokens_str + ('<blk>', )
+-        elif part == '(noise)' or part == 'noise)' or \
+-                part == '(noise' or part == '<noise>':
+-            tokens_str = tokens_str + ('<GBG>', )
+-        elif part in symbol_table:
+-            tokens_str = tokens_str + (part, )
+-        elif part in lexicon_table:
+-            for ch in lexicon_table[part]:
+-                tokens_str = tokens_str + (ch, )
+-        else:
+-            # case with symbols or meaningless english letter combination
+-            part = re.sub(symbol_str, '', part)
+-            for ch in part:
+-                tokens_str = tokens_str + (ch, )
+-
+-    for ch in tokens_str:
+-        if ch in symbol_table:
+-            tokens_idx = tokens_idx + (symbol_table[ch], )
+-        elif ch == '!sil':
+-            if 'sil' in symbol_table:
+-                tokens_idx = tokens_idx + (symbol_table['sil'], )
+-            else:
+-                tokens_idx = tokens_idx + (symbol_table['<blk>'], )
+-        elif ch == '<GBG>':
+-            if '<GBG>' in symbol_table:
+-                tokens_idx = tokens_idx + (symbol_table['<GBG>'], )
+-            else:
+-                tokens_idx = tokens_idx + (symbol_table['<blk>'], )
+-        else:
+-            if '<GBG>' in symbol_table:
+-                tokens_idx = tokens_idx + (symbol_table['<GBG>'], )
+-                logging.info(
+-                    f'{ch} is not in token set, replace with <GBG>')
+-            else:
+-                tokens_idx = tokens_idx + (symbol_table['<blk>'], )
+-                logging.info(
+-                    f'{ch} is not in token set, replace with <blk>')
+-
+-    return tokens_str, tokens_idx
+-
+-
+-def query_token_list(txt, symbol_table, lexicon_table):
+-    tokens_str = []
+-    tokens_idx = []
+-
+-    parts = split_mixed_label(txt)
+-    for part in parts:
+-        if part == '!sil' or part == '(sil)' or part == '<sil>':
+-            tokens_str.append('!sil')
+-        elif part == '<blk>' or part == '<blank>':
+-            tokens_str.append('<blk>')
+-        elif part == '(noise)' or part == 'noise)' or \
+-                part == '(noise' or part == '<noise>':
+-            tokens_str.append('<GBG>')
+-        elif part in symbol_table:
+-            tokens_str.append(part)
+-        elif part in lexicon_table:
+-            for ch in lexicon_table[part]:
+-                tokens_str.append(ch)
+-        else:
+-            # case with symbols or meaningless english letter combination
+-            part = re.sub(symbol_str, '', part)
+-            for ch in part:
+-                tokens_str.append(ch)
+-
+-    for ch in tokens_str:
+-        if ch in symbol_table:
+-            tokens_idx.append(symbol_table[ch])
+-        elif ch == '!sil':
+-            if 'sil' in symbol_table:
+-                tokens_idx.append(symbol_table['sil'])
+-            else:
+-                tokens_idx.append(symbol_table['<blk>'])
+-        elif ch == '<GBG>':
+-            if '<GBG>' in symbol_table:
+-                tokens_idx.append(symbol_table['<GBG>'])
+-            else:
+-                tokens_idx.append(symbol_table['<blk>'])
+-        else:
+-            if '<GBG>' in symbol_table:
+-                tokens_idx.append(symbol_table['<GBG>'])
+-                logging.info(
+-                    f'{ch} is not in token set, replace with <GBG>')
+-            else:
+-                tokens_idx.append(symbol_table['<blk>'])
+-                logging.info(
+-                    f'{ch} is not in token set, replace with <blk>')
+-
+-    return tokens_str, tokens_idx
+-
+-def read_token(token_file):
+-    tokens_table = {}
+-    with open(token_file, 'r', encoding='utf8') as fin:
+-        for line in fin:
+-            arr = line.strip().split()
+-            assert len(arr) == 2
+-            tokens_table[arr[0]] = int(arr[1]) - 1
+-    fin.close()
+-    return tokens_table
+-
+-
+-def read_lexicon(lexicon_file):
+-    lexicon_table = {}
+-    with open(lexicon_file, 'r', encoding='utf8') as fin:
+-        for line in fin:
+-            arr = line.strip().replace('\t', ' ').split()
+-            assert len(arr) >= 2
+-            lexicon_table[arr[0]] = arr[1:]
+-    fin.close()
+-    return lexicon_table
+-
+ 
+ if __name__ == '__main__':
+     parser = argparse.ArgumentParser(description='')
+@@ -162,10 +23,6 @@ if __name__ == '__main__':
+     parser.add_argument('text_file', help='text file')
+     parser.add_argument('duration_file', help='duration file')
+     parser.add_argument('output_file', help='output list file')
+-    parser.add_argument('--token_file', type=str, default=None,
+-                        help='the path of tokens.txt')
+-    parser.add_argument('--lexicon_file', type=str, default=None,
+-                        help='the path of lexicon.txt')
+     args = parser.parse_args()
+ 
+     wav_table = {}
+@@ -182,38 +39,24 @@ if __name__ == '__main__':
+             assert len(arr) == 2
+             duration_table[arr[0]] = float(arr[1])
+ 
+-    token_table = None
+-    if args.token_file:
+-        token_table = read_token(args.token_file)
+-    lexicon_table = None
+-    if args.lexicon_file:
+-        lexicon_table = read_lexicon(args.lexicon_file)
+-
+     with open(args.text_file, 'r', encoding='utf8') as fin, \
+          open(args.output_file, 'w', encoding='utf8') as fout:
+         for line in fin:
+             arr = line.strip().split(maxsplit=1)
+             key = arr[0]
+-            tokens = None
+-            if token_table is not None and lexicon_table is not None :
+-                if len(arr) < 2:  # for some utterence, no text
+-                    txt = [1]  # the <blank>/sil is indexed by 1
+-                    tokens = ["sil"]
+-                else:
+-                    tokens, txt = query_token_list(arr[1],
+-                                                   token_table,
+-                                                   lexicon_table)
++            if arr[1].isdigit():
++                label = int(arr[1])
++                txt = None
+             else:
+-                txt = int(arr[1])
++                # label = txt_to_label(arr[1])
++                label = -1
++                txt = arr[1]
+             assert key in wav_table
+             wav = wav_table[key]
+             assert key in duration_table
+             duration = duration_table[key]
+-            if tokens is None:
+-                line = dict(key=key, txt=txt, duration=duration, wav=wav)
+-            else:
+-                line = dict(key=key, tok=tokens, txt=txt,
+-                            duration=duration, wav=wav)
+-
++            line = dict(key=key, label=label, duration=duration, wav=wav)
++            if txt is not None:
++                line.update({'txt': txt})
+             json_line = json.dumps(line, ensure_ascii=False)
+             fout.write(json_line + '\n')
+diff --git a/wekws/bin/compute_det.py b/wekws/bin/compute_det.py
+index 32b0280..abd469e 100644
+--- a/wekws/bin/compute_det.py
++++ b/wekws/bin/compute_det.py
+@@ -37,10 +37,10 @@ def load_label_and_score(keyword, label_file, score_file):
+         for line in fin:
+             obj = json.loads(line.strip())
+             assert 'key' in obj
+-            assert 'txt' in obj
++            assert 'label' in obj
+             assert 'duration' in obj
+             key = obj['key']
+-            index = obj['txt']
++            index = obj['label']
+             duration = obj['duration']
+             assert key in score_table
+             if index == keyword:
+diff --git a/wekws/bin/compute_det_ctc.py b/wekws/bin/compute_det_ctc.py
+deleted file mode 100644
+index 9a8b5e7..0000000
+--- a/wekws/bin/compute_det_ctc.py
++++ /dev/null
+@@ -1,271 +0,0 @@
+-# Copyright (c) 2021 Binbin Zhang(binbzha@qq.com)
+-#               2022 Shaoqing Yu(954793264@qq.com)
+-#               2023 Jing Du(thuduj12@163.com)
+-#
+-# Licensed under the Apache License, Version 2.0 (the "License");
+-# you may not use this file except in compliance with the License.
+-# You may obtain a copy of the License at
+-#
+-#     http://www.apache.org/licenses/LICENSE-2.0
+-#
+-# Unless required by applicable law or agreed to in writing, software
+-# distributed under the License is distributed on an "AS IS" BASIS,
+-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-# See the License for the specific language governing permissions and
+-# limitations under the License.
+-
+-import argparse
+-import logging
+-import glob
+-import json
+-import re
+-import os
+-import numpy as np
+-import matplotlib.pyplot as plt
+-import pypinyin  # for Chinese Character
+-from tools.make_list import query_token_set, read_lexicon, read_token
+-
+-def split_mixed_label(input_str):
+-    tokens = []
+-    s = input_str.lower()
+-    while len(s) > 0:
+-        match = re.match(r'[A-Za-z!?,<>()\']+', s)
+-        if match is not None:
+-            word = match.group(0)
+-        else:
+-            word = s[0:1]
+-        tokens.append(word)
+-        s = s.replace(word, '', 1).strip(' ')
+-    return tokens
+-
+-
+-def space_mixed_label(input_str):
+-    splits = split_mixed_label(input_str)
+-    space_str = ''.join(f'{sub} ' for sub in splits)
+-    return space_str.strip()
+-
+-def load_label_and_score(keywords_list, label_file, score_file, true_keywords):
+-    score_table = {}
+-    with open(score_file, 'r', encoding='utf8') as fin:
+-        # read score file and store in table
+-        for line in fin:
+-            arr = line.strip().split()
+-            key = arr[0]
+-            is_detected = arr[1]
+-            if is_detected == 'detected':
+-                keyword = true_keywords[arr[2]]
+-                if key not in score_table:
+-                    score_table.update({
+-                        key: {
+-                            'kw': space_mixed_label(keyword),
+-                            'confi': float(arr[3])
+-                        }
+-                    })
+-            else:
+-                if key not in score_table:
+-                    score_table.update({key: {'kw': 'unknown', 'confi': -1.0}})
+-
+-    label_lists = []
+-    with open(label_file, 'r', encoding='utf8') as fin:
+-        for line in fin:
+-            obj = json.loads(line.strip())
+-            label_lists.append(obj)
+-
+-    # build empty structure for keyword-filler infos
+-    keyword_filler_table = {}
+-    for keyword in keywords_list:
+-        keyword = true_keywords[keyword]
+-        keyword = space_mixed_label(keyword)
+-        keyword_filler_table[keyword] = {}
+-        keyword_filler_table[keyword]['keyword_table'] = {}
+-        keyword_filler_table[keyword]['keyword_duration'] = 0.0
+-        keyword_filler_table[keyword]['filler_table'] = {}
+-        keyword_filler_table[keyword]['filler_duration'] = 0.0
+-
+-    for obj in label_lists:
+-        assert 'key' in obj
+-        assert 'wav' in obj
+-        assert 'tok' in obj   # here we use the tokens
+-        assert 'duration' in obj
+-
+-        key = obj['key']
+-        txt = "".join(obj['tok'])
+-        txt = space_mixed_label(txt)
+-        txt_regstr_lrblk = ' ' + txt + ' '
+-        duration = obj['duration']
+-        assert key in score_table
+-
+-        for keyword in keywords_list:
+-            keyword = true_keywords[keyword]
+-            keyword = space_mixed_label(keyword)
+-            keyword_regstr_lrblk = ' ' + keyword + ' '
+-            if txt_regstr_lrblk.find(keyword_regstr_lrblk) != -1:
+-                if keyword == score_table[key]['kw']:
+-                    keyword_filler_table[keyword]['keyword_table'].update(
+-                        {key: score_table[key]['confi']})
+-                else:
+-                    # uttrance detected but not match this keyword
+-                    keyword_filler_table[keyword]['keyword_table'].update(
+-                        {key: -1.0})
+-                keyword_filler_table[keyword]['keyword_duration'] += duration
+-            else:
+-                if keyword == score_table[key]['kw']:
+-                    keyword_filler_table[keyword]['filler_table'].update(
+-                        {key: score_table[key]['confi']})
+-                else:
+-                    # uttrance if detected, which is not FA for this keyword
+-                    keyword_filler_table[keyword]['filler_table'].update(
+-                        {key: -1.0})
+-                keyword_filler_table[keyword]['filler_duration'] += duration
+-
+-    return keyword_filler_table
+-
+-def load_stats_file(stats_file):
+-    values = []
+-    with open(stats_file, 'r', encoding='utf8') as fin:
+-        for line in fin:
+-            arr = line.strip().split()
+-            threshold, fa_per_hour, frr = arr
+-            values.append([float(fa_per_hour), float(frr) * 100])
+-    values.reverse()
+-    return np.array(values)
+-
+-def plot_det(dets_dir, figure_file, xlim=5, x_step=1, ylim=35, y_step=5):
+-    det_title = "DetCurve"
+-    plt.figure(dpi=200)
+-    plt.rcParams['xtick.direction'] = 'in'
+-    plt.rcParams['ytick.direction'] = 'in'
+-    plt.rcParams['font.size'] = 12
+-
+-    for file in glob.glob(f'{dets_dir}/*stats*.txt'):
+-        logging.info(f'reading det data from {file}')
+-        label = os.path.basename(file).split('.')[1]
+-        label = "".join(pypinyin.lazy_pinyin(label))
+-        values = load_stats_file(file)
+-        plt.plot(values[:, 0], values[:, 1], label=label)
+-
+-    plt.xlim([0, xlim])
+-    plt.ylim([0, ylim])
+-    plt.xticks(range(0, xlim + x_step, x_step))
+-    plt.yticks(range(0, ylim + y_step, y_step))
+-    plt.xlabel('False Alarm Per Hour')
+-    plt.ylabel('False Rejection Rate (%)')
+-    plt.grid(linestyle='--')
+-    plt.legend(loc='best', fontsize=6)
+-    plt.savefig(figure_file)
+-
+-if __name__ == '__main__':
+-    parser = argparse.ArgumentParser(description='compute det curve')
+-    parser.add_argument('--test_data', required=True, help='label file')
+-    parser.add_argument('--keywords', type=str, default=None,
+-                        help='keywords, split with comma(,)')
+-    parser.add_argument('--token_file', type=str, default=None,
+-                        help='the path of tokens.txt')
+-    parser.add_argument('--lexicon_file', type=str, default=None,
+-                        help='the path of lexicon.txt')
+-    parser.add_argument('--score_file', required=True, help='score file')
+-    parser.add_argument('--step', type=float, default=0.01,
+-                        help='threshold step')
+-    parser.add_argument('--window_shift', type=int, default=50,
+-                        help='window_shift is used to '
+-                             'skip the frames after triggered')
+-    parser.add_argument('--stats_dir',
+-                        required=False,
+-                        default=None,
+-                        help='false reject/alarm stats dir, '
+-                             'default in score_file')
+-    parser.add_argument('--det_curve_path',
+-                        required=False,
+-                        default=None,
+-                        help='det curve path, default is stats_dir/det.png')
+-    parser.add_argument(
+-        '--xlim',
+-        type=int,
+-        default=5,
+-        help='xlim：range of x-axis, x is false alarm per hour')
+-    parser.add_argument('--x_step', type=int, default=1, help='step on x-axis')
+-    parser.add_argument(
+-        '--ylim',
+-        type=int,
+-        default=35,
+-        help='ylim：range of y-axis, y is false rejection rate')
+-    parser.add_argument('--y_step', type=int, default=5, help='step on y-axis')
+-
+-    args = parser.parse_args()
+-    window_shift = args.window_shift
+-    logging.info(f"keywords is {args.keywords}, "
+-                 f"Chinese is converted into Unicode.")
+-
+-    keywords = args.keywords.encode('utf-8').decode('unicode_escape')
+-    keywords_list = keywords.strip().split(',')
+-
+-    token_table = read_token(args.token_file)
+-    lexicon_table = read_lexicon(args.lexicon_file)
+-    true_keywords = {}
+-    for keyword in keywords_list:
+-        strs, indexes = query_token_set(keyword, token_table, lexicon_table)
+-        true_keywords[keyword] = ''.join(strs)
+-
+-    keyword_filler_table = load_label_and_score(
+-        keywords_list, args.test_data, args.score_file, true_keywords)
+-
+-    for keyword in keywords_list:
+-        keyword = true_keywords[keyword]
+-        keyword = space_mixed_label(keyword)
+-        keyword_dur = keyword_filler_table[keyword]['keyword_duration']
+-        keyword_num = len(keyword_filler_table[keyword]['keyword_table'])
+-        filler_dur = keyword_filler_table[keyword]['filler_duration']
+-        filler_num = len(keyword_filler_table[keyword]['filler_table'])
+-        assert keyword_num > 0, \
+-            'Can\'t compute det for {} without positive sample'
+-        assert filler_num > 0, \
+-            'Can\'t compute det for {} without negative sample'
+-
+-        logging.info('Computing det for {}'.format(keyword))
+-        logging.info('  Keyword duration: {} Hours, wave number: {}'.format(
+-            keyword_dur / 3600.0, keyword_num))
+-        logging.info('  Filler duration: {} Hours'.format(filler_dur / 3600.0))
+-
+-        if args.stats_dir :
+-            stats_dir = args.stats_dir
+-        else:
+-            stats_dir = os.path.dirname(args.score_file)
+-        stats_file = os.path.join(
+-            stats_dir, 'stats.' + keyword.replace(' ', '_') + '.txt')
+-        with open(stats_file, 'w', encoding='utf8') as fout:
+-            threshold = 0.0
+-            while threshold <= 1.0:
+-                num_false_reject = 0
+-                num_true_detect = 0
+-                # transverse the all keyword_table
+-                for key, confi in \
+-                        keyword_filler_table[keyword]['keyword_table'].items():
+-                    if confi < threshold:
+-                        num_false_reject += 1
+-                    else:
+-                        num_true_detect += 1
+-
+-                num_false_alarm = 0
+-                # transverse the all filler_table
+-                for key, confi in keyword_filler_table[
+-                        keyword]['filler_table'].items():
+-                    if confi >= threshold:
+-                        num_false_alarm += 1
+-                        # print(f'false alarm: {keyword}, {key}, {confi}')
+-
+-                false_reject_rate = num_false_reject / keyword_num
+-                true_detect_rate = num_true_detect / keyword_num
+-
+-                num_false_alarm = max(num_false_alarm, 1e-6)
+-                false_alarm_per_hour = num_false_alarm / (filler_dur / 3600.0)
+-                false_alarm_rate = num_false_alarm / filler_num
+-
+-                fout.write('{:.3f} {:.6f} {:.6f}\n'.format(
+-                    threshold, false_alarm_per_hour, false_reject_rate))
+-                threshold += args.step
+-    if args.det_curve_path :
+-        det_curve_path = args.det_curve_path
+-    else:
+-        det_curve_path = os.path.join(stats_dir, 'det.png')
+-    plot_det(stats_dir, det_curve_path,
+-             args.xlim, args.x_step, args.ylim, args.y_step)
+diff --git a/wekws/bin/ctc_decode.py b/wekws/bin/ctc_decode.py
+new file mode 100644
+index 0000000..3f493af
+--- /dev/null
++++ b/wekws/bin/ctc_decode.py
+@@ -0,0 +1,164 @@
++# Copyright (c) 2021 Binbin Zhang(binbzha@qq.com)
++#               2022 Shaoqing Yu(954793264@qq.com)
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++from __future__ import print_function
++
++import argparse
++import copy
++import logging
++import os
++import sys
++
++import torch
++import yaml
++from torch.utils.data import DataLoader
++
++from wekws.dataset.dataset import Dataset
++from wekws.model.kws_model import init_model
++from wekws.utils.checkpoint import load_checkpoint
++
++from typing import List
++import torch
++
++# from wenet.utils.mask import make_pad_mask
++
++
++
++def get_args():
++    parser = argparse.ArgumentParser(description='recognize with your model')
++    parser.add_argument('--config', required=True, help='config file')
++    parser.add_argument('--test_data', required=True, help='test data file')
++    parser.add_argument('--gpu',
++                        type=int,
++                        default=-1,
++                        help='gpu id for this rank, -1 for cpu')
++    parser.add_argument('--checkpoint', required=True, help='checkpoint model')
++    parser.add_argument('--batch_size',
++                        default=16,
++                        type=int,
++                        help='batch size for inference')
++    parser.add_argument('--num_workers',
++                        default=0,
++                        type=int,
++                        help='num of subprocess workers for reading')
++    parser.add_argument('--pin_memory',
++                        action='store_true',
++                        default=False,
++                        help='Use pinned memory buffers used for reading')
++    parser.add_argument('--prefetch',
++                        default=100,
++                        type=int,
++                        help='prefetch number')
++    parser.add_argument('--score_file',
++                        required=True,
++                        help='output score file')
++    parser.add_argument('--jit_model',
++                        action='store_true',
++                        default=False,
++                        help='Use pinned memory buffers used for reading')
++    args = parser.parse_args()
++    return args
++
++
++def remove_duplicates_and_blank(hyp: List[int]) -> List[int]:
++    new_hyp: List[int] = []
++    cur = 0
++    while cur < len(hyp):
++        if hyp[cur] != 0:
++            new_hyp.append(hyp[cur])
++        prev = cur
++        while cur < len(hyp) and hyp[cur] == hyp[prev]:
++            cur += 1
++    return new_hyp
++
++def main():
++    print('begin main')
++    args = get_args()
++    logging.basicConfig(level=logging.DEBUG,
++                        format='%(asctime)s %(levelname)s %(message)s')
++    os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
++
++    with open(args.config, 'r') as fin:
++        configs = yaml.load(fin, Loader=yaml.FullLoader)
++
++    test_conf = copy.deepcopy(configs['dataset_conf'])
++    test_conf['filter_conf']['max_length'] = 102400
++    test_conf['filter_conf']['min_length'] = 0
++    test_conf['speed_perturb'] = False
++    test_conf['spec_aug'] = False
++    test_conf['shuffle'] = False
++    test_conf['feature_extraction_conf']['dither'] = 0.0
++    test_conf['batch_conf']['batch_size'] = args.batch_size
++
++    test_dataset = Dataset(args.test_data, None, test_conf)
++    test_data_loader = DataLoader(test_dataset,
++                                  batch_size=None,
++                                  pin_memory=args.pin_memory,
++                                  num_workers=args.num_workers,
++                                  prefetch_factor=args.prefetch)
++
++    if args.jit_model:
++        model = torch.jit.load(args.checkpoint)
++        # For script model, only cpu is supported.
++        device = torch.device('cpu')
++    else:
++        # Init asr model from configs
++        model = init_model(configs['model'])
++        load_checkpoint(model, args.checkpoint)
++        use_cuda = args.gpu >= 0 and torch.cuda.is_available()
++        device = torch.device('cuda' if use_cuda else 'cpu')
++    model = model.to(device)
++    model.eval()
++    score_abs_path = os.path.abspath(args.score_file)
++    with torch.no_grad(), open(score_abs_path, 'w', encoding='utf8') as fout:
++        print('begin loop')
++        for batch_idx, batch in enumerate(test_data_loader):
++            keys, feats, target, ctc_target, feats_lengths, ctc_label_lengths = batch
++            ctc_filter_mask = torch.max(ctc_target, dim=-1)[0] > 0
++            feats = feats.to(device)
++            feats_lengths = feats_lengths.to(device)
++            feats = feats[ctc_filter_mask]
++            feats_lengths = feats_lengths[ctc_filter_mask]
++            ctc_target = ctc_target[ctc_filter_mask]
++            target_lengths = target_lengths[ctc_filter_mask]
++            print('begin forward')
++            _, ctc_log_probs, _ = model(feats)
++            print('end forward')
++            maxlen = ctc_log_probs.size(1)
++            topk_prob, topk_index = ctc_log_probs.topk(1, dim=2)  # (B, maxlen, 1)
++            # mask = make_pad_mask(feats_lengths, maxlen)  # (B, maxlen)
++            # topk_index = topk_index.masked_fill_(mask, self.eos)  # (B, maxlen)
++            hyps = [hyp.tolist() for hyp in topk_index]
++            scores = topk_prob.max(1)
++            hyps = [remove_duplicates_and_blank(hyp) for hyp in hyps]
++            print(scores)
++
++            # logits = logits.cpu()
++            # for i in range(len(keys)):
++            #     key = keys[i]
++            #     score = logits[i][:feats_lengths[i]]
++            #     for keyword_i in range(num_keywords):
++            #         keyword_scores = score[:, keyword_i]
++            #         score_frames = ' '.join(['{:.6f}'.format(x)
++            #                                 for x in keyword_scores.tolist()])
++            #         fout.write('{} {} {}\n'.format(
++            #             key, keyword_i, score_frames))
++            # if batch_idx % 10 == 0:
++            #     print('Progress batch {}'.format(batch_idx))
++            #     sys.stdout.flush()
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/wekws/bin/export_onnx.py b/wekws/bin/export_onnx.py
+index f998774..75eb5b0 100644
+--- a/wekws/bin/export_onnx.py
++++ b/wekws/bin/export_onnx.py
+@@ -41,11 +41,6 @@ def main():
+         configs = yaml.load(fin, Loader=yaml.FullLoader)
+     feature_dim = configs['model']['input_dim']
+     model = init_model(configs['model'])
+-    is_fsmn = configs['model']['backbone']['type'] == 'fsmn'
+-    num_layers = configs['model']['backbone']['num_layers']
+-    if configs['training_config'].get('criterion', 'max_pooling') == 'ctc':
+-        # if we use ctc_loss, the logits need to be convert into probs
+-        model.forward = model.forward_softmax
+     print(model)
+ 
+     load_checkpoint(model, args.checkpoint)
+@@ -56,8 +51,6 @@ def main():
+                         model.hdim,
+                         model.backbone.padding,
+                         dtype=torch.float)
+-    if is_fsmn:
+-        cache = cache.unsqueeze(-1).expand(-1, -1, -1, num_layers)
+     torch.onnx.export(model, (dummy_input, cache),
+                       args.onnx_model,
+                       input_names=['input', 'cache'],
+diff --git a/wekws/bin/score.py b/wekws/bin/score.py
+index 97e91e2..de73c41 100644
+--- a/wekws/bin/score.py
++++ b/wekws/bin/score.py
+@@ -84,7 +84,7 @@ def main():
+     test_conf['feature_extraction_conf']['dither'] = 0.0
+     test_conf['batch_conf']['batch_size'] = args.batch_size
+ 
+-    test_dataset = Dataset(args.test_data, test_conf)
++    test_dataset = Dataset(args.test_data, None, test_conf)
+     test_data_loader = DataLoader(test_dataset,
+                                   batch_size=None,
+                                   pin_memory=args.pin_memory,
+@@ -106,15 +106,15 @@ def main():
+     score_abs_path = os.path.abspath(args.score_file)
+     with torch.no_grad(), open(score_abs_path, 'w', encoding='utf8') as fout:
+         for batch_idx, batch in enumerate(test_data_loader):
+-            keys, feats, target, lengths, target_lengths = batch
++            keys, feats, target, ctc_target, feats_lengths, ctc_label_lengths = batch
+             feats = feats.to(device)
+-            lengths = lengths.to(device)
+-            logits, _ = model(feats)
++            feats_lengths = feats_lengths.to(device)
++            logits, _, _ = model(feats)
+             num_keywords = logits.shape[2]
+             logits = logits.cpu()
+             for i in range(len(keys)):
+                 key = keys[i]
+-                score = logits[i][:lengths[i]]
++                score = logits[i][:feats_lengths[i]]
+                 for keyword_i in range(num_keywords):
+                     keyword_scores = score[:, keyword_i]
+                     score_frames = ' '.join(['{:.6f}'.format(x)
+diff --git a/wekws/bin/score_ctc.py b/wekws/bin/score_ctc.py
+deleted file mode 100644
+index 9be9da1..0000000
+--- a/wekws/bin/score_ctc.py
++++ /dev/null
+@@ -1,219 +0,0 @@
+-# Copyright (c) 2021 Binbin Zhang(binbzha@qq.com)
+-#               2022 Shaoqing Yu(954793264@qq.com)
+-#               2023 Jing Du(thuduj12@163.com)
+-#
+-# Licensed under the Apache License, Version 2.0 (the "License");
+-# you may not use this file except in compliance with the License.
+-# You may obtain a copy of the License at
+-#
+-#     http://www.apache.org/licenses/LICENSE-2.0
+-#
+-# Unless required by applicable law or agreed to in writing, software
+-# distributed under the License is distributed on an "AS IS" BASIS,
+-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-# See the License for the specific language governing permissions and
+-# limitations under the License.
+-
+-from __future__ import print_function
+-
+-import argparse
+-import copy
+-import logging
+-import os
+-import sys
+-import math
+-
+-import torch
+-import yaml
+-from torch.utils.data import DataLoader
+-
+-from wekws.dataset.dataset import Dataset
+-from wekws.model.kws_model import init_model
+-from wekws.utils.checkpoint import load_checkpoint
+-from wekws.model.loss import ctc_prefix_beam_search
+-from tools.make_list import query_token_set, read_lexicon, read_token
+-
+-def get_args():
+-    parser = argparse.ArgumentParser(description='recognize with your model')
+-    parser.add_argument('--config', required=True, help='config file')
+-    parser.add_argument('--test_data', required=True, help='test data file')
+-    parser.add_argument('--gpu',
+-                        type=int,
+-                        default=-1,
+-                        help='gpu id for this rank, -1 for cpu')
+-    parser.add_argument('--checkpoint', required=True, help='checkpoint model')
+-    parser.add_argument('--batch_size',
+-                        default=16,
+-                        type=int,
+-                        help='batch size for inference')
+-    parser.add_argument('--num_workers',
+-                        default=0,
+-                        type=int,
+-                        help='num of subprocess workers for reading')
+-    parser.add_argument('--pin_memory',
+-                        action='store_true',
+-                        default=False,
+-                        help='Use pinned memory buffers used for reading')
+-    parser.add_argument('--prefetch',
+-                        default=100,
+-                        type=int,
+-                        help='prefetch number')
+-    parser.add_argument('--score_file',
+-                        required=True,
+-                        help='output score file')
+-    parser.add_argument('--jit_model',
+-                        action='store_true',
+-                        default=False,
+-                        help='Use pinned memory buffers used for reading')
+-    parser.add_argument('--keywords', type=str, default=None,
+-                        help='the keywords, split with comma(,)')
+-    parser.add_argument('--token_file', type=str, default=None,
+-                        help='the path of tokens.txt')
+-    parser.add_argument('--lexicon_file', type=str, default=None,
+-                        help='the path of lexicon.txt')
+-
+-    args = parser.parse_args()
+-    return args
+-
+-def is_sublist(main_list, check_list):
+-    if len(main_list) < len(check_list):
+-        return -1
+-
+-    if len(main_list) == len(check_list):
+-        return 0 if main_list == check_list else -1
+-
+-    for i in range(len(main_list) - len(check_list)):
+-        if main_list[i] == check_list[0]:
+-            for j in range(len(check_list)):
+-                if main_list[i + j] != check_list[j]:
+-                    break
+-            else:
+-                return i
+-    else:
+-        return -1
+-
+-
+-def main():
+-    args = get_args()
+-    logging.basicConfig(level=logging.DEBUG,
+-                        format='%(asctime)s %(levelname)s %(message)s')
+-    os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
+-
+-    with open(args.config, 'r') as fin:
+-        configs = yaml.load(fin, Loader=yaml.FullLoader)
+-
+-    test_conf = copy.deepcopy(configs['dataset_conf'])
+-    test_conf['filter_conf']['max_length'] = 102400
+-    test_conf['filter_conf']['min_length'] = 0
+-    test_conf['speed_perturb'] = False
+-    test_conf['spec_aug'] = False
+-    test_conf['shuffle'] = False
+-    test_conf['feature_extraction_conf']['dither'] = 0.0
+-    test_conf['batch_conf']['batch_size'] = args.batch_size
+-
+-    test_dataset = Dataset(args.test_data, test_conf)
+-    test_data_loader = DataLoader(test_dataset,
+-                                  batch_size=None,
+-                                  pin_memory=args.pin_memory,
+-                                  num_workers=args.num_workers,
+-                                  prefetch_factor=args.prefetch)
+-
+-    if args.jit_model:
+-        model = torch.jit.load(args.checkpoint)
+-        # For script model, only cpu is supported.
+-        device = torch.device('cpu')
+-    else:
+-        # Init asr model from configs
+-        model = init_model(configs['model'])
+-        load_checkpoint(model, args.checkpoint)
+-        use_cuda = args.gpu >= 0 and torch.cuda.is_available()
+-        device = torch.device('cuda' if use_cuda else 'cpu')
+-    model = model.to(device)
+-    model.eval()
+-    score_abs_path = os.path.abspath(args.score_file)
+-
+-    token_table = read_token(args.token_file)
+-    lexicon_table = read_lexicon(args.lexicon_file)
+-    # 4. parse keywords tokens
+-    assert args.keywords is not None, 'at least one keyword is needed'
+-    logging.info(f"keywords is {args.keywords}, "
+-                 f"Chinese is converted into Unicode.")
+-    keywords_str = args.keywords.encode('utf-8').decode('unicode_escape')
+-    keywords_list = keywords_str.strip().replace(' ', '').split(',')
+-    keywords_token = {}
+-    keywords_idxset = {0}
+-    keywords_strset = {'<blk>'}
+-    keywords_tokenmap = {'<blk>': 0}
+-    for keyword in keywords_list:
+-        strs, indexes = query_token_set(keyword, token_table, lexicon_table)
+-        keywords_token[keyword] = {}
+-        keywords_token[keyword]['token_id'] = indexes
+-        keywords_token[keyword]['token_str'] = ''.join('%s ' % str(i)
+-                                                       for i in indexes)
+-        [keywords_strset.add(i) for i in strs]
+-        [keywords_idxset.add(i) for i in indexes]
+-        for txt, idx in zip(strs, indexes):
+-            if keywords_tokenmap.get(txt, None) is None:
+-                keywords_tokenmap[txt] = idx
+-
+-    token_print = ''
+-    for txt, idx in keywords_tokenmap.items():
+-        token_print += f'{txt}({idx}) '
+-    logging.info(f'Token set is: {token_print}')
+-
+-    with torch.no_grad(), open(score_abs_path, 'w', encoding='utf8') as fout:
+-        for batch_idx, batch in enumerate(test_data_loader):
+-            keys, feats, target, lengths, target_lengths = batch
+-            feats = feats.to(device)
+-            lengths = lengths.to(device)
+-            logits, _ = model(feats)
+-            logits = logits.softmax(2)  # (batch_size, maxlen, vocab_size)
+-            logits = logits.cpu()
+-            for i in range(len(keys)):
+-                key = keys[i]
+-                score = logits[i][:lengths[i]]
+-                hyps = ctc_prefix_beam_search(score,
+-                                              lengths[i],
+-                                              keywords_idxset)
+-                hit_keyword = None
+-                hit_score = 1.0
+-                start = 0
+-                end = 0
+-                for one_hyp in hyps:
+-                    prefix_ids = one_hyp[0]
+-                    # path_score = one_hyp[1]
+-                    prefix_nodes = one_hyp[2]
+-                    assert len(prefix_ids) == len(prefix_nodes)
+-                    for word in keywords_token.keys():
+-                        lab = keywords_token[word]['token_id']
+-                        offset = is_sublist(prefix_ids, lab)
+-                        if offset != -1:
+-                            hit_keyword = word
+-                            start = prefix_nodes[offset]['frame']
+-                            end = prefix_nodes[offset + len(lab) - 1]['frame']
+-                            for idx in range(offset, offset + len(lab)):
+-                                hit_score *= prefix_nodes[idx]['prob']
+-                            break
+-                    if hit_keyword is not None:
+-                        hit_score = math.sqrt(hit_score)
+-                        break
+-
+-                if hit_keyword is not None:
+-                    fout.write('{} detected {} {:.3f}\n'.format(
+-                        key, hit_keyword, hit_score))
+-                    logging.info(
+-                        f"batch:{batch_idx}_{i} detect {hit_keyword} "
+-                        f"in {key} from {start} to {end} frame. "
+-                        f"duration {end - start}, "
+-                        f"score {hit_score}, Activated.")
+-                else:
+-                    fout.write('{} rejected\n'.format(key))
+-                    logging.info(f"batch:{batch_idx}_{i} {key} Deactivated.")
+-
+-            if batch_idx % 10 == 0:
+-                print('Progress batch {}'.format(batch_idx))
+-                sys.stdout.flush()
+-
+-
+-if __name__ == '__main__':
+-    main()
+diff --git a/wekws/bin/stream_kws_ctc.py b/wekws/bin/stream_kws_ctc.py
+deleted file mode 100644
+index 07e01e4..0000000
+--- a/wekws/bin/stream_kws_ctc.py
++++ /dev/null
+@@ -1,587 +0,0 @@
+-# Copyright (c) 2023 Jing Du(thuduj12@163.com)
+-#
+-# Licensed under the Apache License, Version 2.0 (the "License");
+-# you may not use this file except in compliance with the License.
+-# You may obtain a copy of the License at
+-#
+-#     http://www.apache.org/licenses/LICENSE-2.0
+-#
+-# Unless required by applicable law or agreed to in writing, software
+-# distributed under the License is distributed on an "AS IS" BASIS,
+-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-# See the License for the specific language governing permissions and
+-# limitations under the License.
+-
+-from __future__ import print_function
+-
+-import argparse
+-import struct
+-# import wave
+-import librosa
+-import logging
+-import os
+-import math
+-import numpy as np
+-import torchaudio.compliance.kaldi as kaldi
+-
+-import torch
+-import torch.nn.functional as F
+-import yaml
+-from collections import defaultdict
+-from wekws.model.kws_model import init_model
+-from wekws.utils.checkpoint import load_checkpoint
+-from tools.make_list import query_token_set, read_lexicon, read_token
+-
+-
+-def get_args():
+-    parser = argparse.ArgumentParser(description='detect keywords online.')
+-    parser.add_argument('--config', required=True, help='config file')
+-    parser.add_argument('--wav_path', required=False,
+-                        default=None, help='test wave path.')
+-    parser.add_argument('--wav_scp', required=False,
+-                        default=None, help='test wave scp.')
+-    parser.add_argument('--result_file', required=False,
+-                        default=None, help='test result.')
+-
+-    parser.add_argument('--gpu',
+-                        type=int,
+-                        default=-1,
+-                        help='gpu id for this rank, -1 for cpu')
+-    parser.add_argument('--checkpoint', required=True, help='checkpoint model')
+-    parser.add_argument('--jit_model',
+-                        action='store_true',
+-                        default=False,
+-                        help='Use pinned memory buffers used for reading')
+-    parser.add_argument('--keywords', type=str, default=None,
+-                        help='the keywords, split with comma(,)')
+-    parser.add_argument('--token_file', type=str, default=None,
+-                        help='the path of tokens.txt')
+-    parser.add_argument('--lexicon_file', type=str, default=None,
+-                        help='the path of lexicon.txt')
+-    parser.add_argument('--score_beam_size',
+-                        default=3,
+-                        type=int,
+-                        help='The first prune beam, '
+-                             'filter out those frames with low scores.')
+-    parser.add_argument('--path_beam_size',
+-                        default=20,
+-                        type=int,
+-                        help='The second prune beam, '
+-                             'keep only path_beam_size candidates.')
+-    parser.add_argument('--threshold',
+-                        type=float,
+-                        default=0.0,
+-                        help='The threshold of kws. '
+-                             'If ctc_search probs exceed this value,'
+-                             'the keyword will be activated.')
+-    parser.add_argument('--min_frames',
+-                        default=5,
+-                        type=int,
+-                        help='The min frames of keyword\'s duration.')
+-    parser.add_argument('--max_frames',
+-                        default=250,
+-                        type=int,
+-                        help='The max frames of keyword\'s duration.')
+-    parser.add_argument('--interval_frames',
+-                        default=50,
+-                        type=int,
+-                        help='The interval frames of two continuous keywords.')
+-
+-    args = parser.parse_args()
+-    return args
+-
+-
+-def is_sublist(main_list, check_list):
+-    if len(main_list) < len(check_list):
+-        return -1
+-
+-    if len(main_list) == len(check_list):
+-        return 0 if main_list == check_list else -1
+-
+-    for i in range(len(main_list) - len(check_list)):
+-        if main_list[i] == check_list[0]:
+-            for j in range(len(check_list)):
+-                if main_list[i + j] != check_list[j]:
+-                    break
+-            else:
+-                return i
+-    else:
+-        return -1
+-
+-def ctc_prefix_beam_search(t, probs,
+-                           cur_hyps,
+-                           keywords_idxset,
+-                           score_beam_size):
+-    '''
+-
+-    :param t: the time in frame
+-    :param probs: the probability in t_th frame, (vocab_size, )
+-    :param cur_hyps: list of tuples. [(tuple(), (1.0, 0.0, []))]
+-                in tuple, 1st is prefix id, 2nd include p_blank,
+-                p_non_blank, and path nodes list.
+-                in path nodes list, each node is
+-                a dict of {token=idx, frame=t, prob=ps}
+-    :param keywords_idxset: the index of keywords in token.txt
+-    :param score_beam_size: the probability threshold,
+-                to filter out those frames with low probs.
+-    :return:
+-            next_hyps: the hypothesis depend on current hyp and current frame.
+-    '''
+-    # key: prefix, value (pb, pnb), default value(-inf, -inf)
+-    next_hyps = defaultdict(lambda: (0.0, 0.0, []))
+-
+-    # 2.1 First beam prune: select topk best
+-    top_k_probs, top_k_index = probs.topk(score_beam_size)
+-
+-    # filter prob score that is too small
+-    filter_probs = []
+-    filter_index = []
+-    for prob, idx in zip(top_k_probs.tolist(), top_k_index.tolist()):
+-        if keywords_idxset is not None:
+-            if prob > 0.05 and idx in keywords_idxset:
+-                filter_probs.append(prob)
+-                filter_index.append(idx)
+-        else:
+-            if prob > 0.05:
+-                filter_probs.append(prob)
+-                filter_index.append(idx)
+-
+-    if len(filter_index) == 0:
+-        return cur_hyps
+-
+-    for s in filter_index:
+-        ps = probs[s].item()
+-
+-        for prefix, (pb, pnb, cur_nodes) in cur_hyps:
+-            last = prefix[-1] if len(prefix) > 0 else None
+-            if s == 0:  # blank
+-                n_pb, n_pnb, nodes = next_hyps[prefix]
+-                n_pb = n_pb + pb * ps + pnb * ps
+-                nodes = cur_nodes.copy()
+-                next_hyps[prefix] = (n_pb, n_pnb, nodes)
+-            elif s == last:
+-                if not math.isclose(pnb, 0.0, abs_tol=0.000001):
+-                    # Update *ss -> *s;
+-                    n_pb, n_pnb, nodes = next_hyps[prefix]
+-                    n_pnb = n_pnb + pnb * ps
+-                    nodes = cur_nodes.copy()
+-                    if ps > nodes[-1]['prob']:  # update frame and prob
+-                        nodes[-1]['prob'] = ps
+-                        nodes[-1]['frame'] = t
+-                    next_hyps[prefix] = (n_pb, n_pnb, nodes)
+-
+-                if not math.isclose(pb, 0.0, abs_tol=0.000001):
+-                    # Update *s-s -> *ss, - is for blank
+-                    n_prefix = prefix + (s,)
+-                    n_pb, n_pnb, nodes = next_hyps[n_prefix]
+-                    n_pnb = n_pnb + pb * ps
+-                    nodes = cur_nodes.copy()
+-                    nodes.append(dict(token=s, frame=t,
+-                                      prob=ps))  # to record token prob
+-                    next_hyps[n_prefix] = (n_pb, n_pnb, nodes)
+-            else:
+-                n_prefix = prefix + (s,)
+-                n_pb, n_pnb, nodes = next_hyps[n_prefix]
+-                if nodes:
+-                    if ps > nodes[-1]['prob']:  # update frame and prob
+-                        # nodes[-1]['prob'] = ps
+-                        # nodes[-1]['frame'] = t
+-                        nodes.pop()
+-                        # to avoid change other beam which has this node.
+-                        nodes.append(dict(token=s, frame=t, prob=ps))
+-                else:
+-                    nodes = cur_nodes.copy()
+-                    nodes.append(dict(token=s, frame=t,
+-                                      prob=ps))  # to record token prob
+-                n_pnb = n_pnb + pb * ps + pnb * ps
+-                next_hyps[n_prefix] = (n_pb, n_pnb, nodes)
+-
+-    # 2.2 Second beam prune
+-    next_hyps = sorted(
+-        next_hyps.items(), key=lambda x: (x[1][0] + x[1][1]), reverse=True)
+-
+-    return next_hyps
+-
+-class KeyWordSpotter(torch.nn.Module):
+-    def __init__(self, ckpt_path, config_path, token_path, lexicon_path,
+-                 threshold, min_frames=5, max_frames=250, interval_frames=50,
+-                 score_beam=3, path_beam=20,
+-                 gpu=-1, is_jit_model=False,):
+-        super().__init__()
+-        os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
+-        with open(config_path, 'r') as fin:
+-            configs = yaml.load(fin, Loader=yaml.FullLoader)
+-        dataset_conf = configs['dataset_conf']
+-
+-        # feature related
+-        self.sample_rate = 16000
+-        self.wave_remained = np.array([])
+-        self.num_mel_bins = dataset_conf[
+-            'feature_extraction_conf']['num_mel_bins']
+-        self.frame_length = dataset_conf[
+-            'feature_extraction_conf']['frame_length']  # in ms
+-        self.frame_shift = dataset_conf[
+-            'feature_extraction_conf']['frame_shift']    # in ms
+-        self.downsampling = dataset_conf.get('frame_skip', 1)
+-        self.resolution = self.frame_shift / 1000   # in second
+-        # fsmn splice operation
+-        self.context_expansion = dataset_conf.get('context_expansion', False)
+-        self.left_context = 0
+-        self.right_context = 0
+-        if self.context_expansion:
+-            self.left_context = dataset_conf['context_expansion_conf']['left']
+-            self.right_context = dataset_conf['context_expansion_conf']['right']
+-        self.feature_remained = None
+-        self.feats_ctx_offset = 0  # after downsample, offset exist.
+-
+-
+-        # model related
+-        if is_jit_model:
+-            model = torch.jit.load(ckpt_path)
+-            # For script model, only cpu is supported.
+-            device = torch.device('cpu')
+-        else:
+-            # Init model from configs
+-            model = init_model(configs['model'])
+-            load_checkpoint(model, ckpt_path)
+-            use_cuda = gpu >= 0 and torch.cuda.is_available()
+-            device = torch.device('cuda' if use_cuda else 'cpu')
+-        self.device = device
+-        self.model = model.to(device)
+-        self.model.eval()
+-        logging.info(f'model {ckpt_path} loaded.')
+-        self.token_table = read_token(token_path)
+-        logging.info(f'tokens {token_path} with '
+-                     f'{len(self.token_table)} units loaded.')
+-        self.lexicon_table = read_lexicon(lexicon_path)
+-        logging.info(f'lexicons {lexicon_path} with '
+-                     f'{len(self.lexicon_table)} units loaded.')
+-        self.in_cache = torch.zeros(0, 0, 0, dtype=torch.float)
+-
+-
+-        # decoding and detection related
+-        self.score_beam = score_beam
+-        self.path_beam = path_beam
+-
+-        self.threshold = threshold
+-        self.min_frames = min_frames
+-        self.max_frames = max_frames
+-        self.interval_frames = interval_frames
+-
+-        self.cur_hyps = [(tuple(), (1.0, 0.0, []))]
+-        self.hit_score = 1.0
+-        self.hit_keyword = None
+-        self.activated = False
+-
+-        self.total_frames = 0   # frame offset, for absolute time
+-        self.last_active_pos = -1  # the last frame of being activated
+-        self.result = {}
+-
+-    def set_keywords(self, keywords):
+-        # 4. parse keywords tokens
+-        assert keywords is not None, \
+-            'at least one keyword is needed, ' \
+-            'multiple keywords should be splitted with comma(,)'
+-        keywords_str = keywords
+-        keywords_list = keywords_str.strip().replace(' ', '').split(',')
+-        keywords_token = {}
+-        keywords_idxset = {0}
+-        keywords_strset = {'<blk>'}
+-        keywords_tokenmap = {'<blk>': 0}
+-        for keyword in keywords_list:
+-            strs, indexes = query_token_set(
+-                keyword, self.token_table, self.lexicon_table)
+-            keywords_token[keyword] = {}
+-            keywords_token[keyword]['token_id'] = indexes
+-            keywords_token[keyword]['token_str'] = ''.join('%s ' % str(i)
+-                                                           for i in indexes)
+-            [keywords_strset.add(i) for i in strs]
+-            [keywords_idxset.add(i) for i in indexes]
+-            for txt, idx in zip(strs, indexes):
+-                if keywords_tokenmap.get(txt, None) is None:
+-                    keywords_tokenmap[txt] = idx
+-
+-        token_print = ''
+-        for txt, idx in keywords_tokenmap.items():
+-            token_print += f'{txt}({idx}) '
+-        logging.info(f'Token set is: {token_print}')
+-        self.keywords_idxset = keywords_idxset
+-        self.keywords_token = keywords_token
+-
+-    def accept_wave(self, wave):
+-        assert isinstance(wave, bytes), \
+-            "please make sure the input format is bytes(raw PCM)"
+-        # convert bytes into float32
+-        data = []
+-        for i in range(0, len(wave), 2):
+-            value = struct.unpack('<h', wave[i:i + 2])[0]
+-            data.append(value)
+-            # here we don't divide 32768.0,
+-            # because kaldi.fbank accept original input
+-
+-        wave = np.array(data)
+-        wave = np.append(self.wave_remained, wave)
+-        if wave.size < (self.frame_length * self.sample_rate / 1000) \
+-                * self.right_context :
+-            self.wave_remained = wave
+-            return None
+-        wave_tensor = torch.from_numpy(wave).float().to(self.device)
+-        wave_tensor = wave_tensor.unsqueeze(0)   # add a channel dimension
+-        feats = kaldi.fbank(wave_tensor,
+-                            num_mel_bins=self.num_mel_bins,
+-                            frame_length=self.frame_length,
+-                            frame_shift=self.frame_shift,
+-                            dither=0,
+-                            energy_floor=0.0,
+-                            sample_frequency=self.sample_rate)
+-        # update wave remained
+-        feat_len = len(feats)
+-        frame_shift = int(self.frame_shift / 1000 * self.sample_rate)
+-        self.wave_remained = wave[feat_len * frame_shift:]
+-
+-        if self.context_expansion:
+-            assert feat_len > self.right_context, \
+-                "make sure each chunk feat length is large than right context."
+-            # pad feats with remained feature from last chunk
+-            if self.feature_remained is None:  # first chunk
+-                # pad first frame at the beginning,
+-                # replicate just support last dimension, so we do transpose.
+-                feats_pad = F.pad(
+-                    feats.T, (self.left_context, 0), mode='replicate').T
+-            else:
+-                feats_pad = torch.cat((self.feature_remained, feats))
+-
+-            ctx_frm = feats_pad.shape[0] - (
+-                self.right_context + self.right_context)
+-            ctx_win = (self.left_context + self.right_context + 1)
+-            ctx_dim = feats.shape[1] * ctx_win
+-            feats_ctx = torch.zeros(ctx_frm, ctx_dim, dtype=torch.float32)
+-            for i in range(ctx_frm):
+-                feats_ctx[i] = torch.cat(
+-                    tuple(feats_pad[i: i + ctx_win])).unsqueeze(0)
+-
+-            # update feature remained, and feats
+-            self.feature_remained = \
+-                feats[-(self.left_context + self.right_context):]
+-            feats = feats_ctx.to(self.device)
+-        if self.downsampling > 1:
+-            last_remainder = 0 if self.feats_ctx_offset == 0 \
+-                else self.downsampling - self.feats_ctx_offset
+-            remainder = (feats.size(0) + last_remainder) % self.downsampling
+-            feats = feats[self.feats_ctx_offset::self.downsampling, :]
+-            self.feats_ctx_offset = remainder \
+-                if remainder == 0 else self.downsampling - remainder
+-        return feats
+-
+-    def decode_keywords(self, t, probs):
+-        absolute_time = t + self.total_frames
+-        # search next_hyps depend on current probs and hyps.
+-        next_hyps = ctc_prefix_beam_search(absolute_time,
+-                                           probs,
+-                                           self.cur_hyps,
+-                                           self.keywords_idxset,
+-                                           self.score_beam)
+-        # update cur_hyps. note: the hyps is sort by path score(pnb+pb),
+-        # not the keywords' probabilities.
+-        cur_hyps = next_hyps[:self.path_beam]
+-        self.cur_hyps = cur_hyps
+-
+-    def execute_detection(self, t):
+-        absolute_time = t + self.total_frames
+-        hit_keyword = None
+-        start = 0
+-        end = 0
+-
+-        # hyps for detection
+-        hyps = [(y[0], y[1][0] + y[1][1], y[1][2]) for y in self.cur_hyps]
+-
+-        # detect keywords in decoding paths.
+-        for one_hyp in hyps:
+-            prefix_ids = one_hyp[0]
+-            # path_score = one_hyp[1]
+-            prefix_nodes = one_hyp[2]
+-            assert len(prefix_ids) == len(prefix_nodes)
+-            for word in self.keywords_token.keys():
+-                lab = self.keywords_token[word]['token_id']
+-                offset = is_sublist(prefix_ids, lab)
+-                if offset != -1:
+-                    hit_keyword = word
+-                    start = prefix_nodes[offset]['frame']
+-                    end = prefix_nodes[offset + len(lab) - 1]['frame']
+-                    for idx in range(offset, offset + len(lab)):
+-                        self.hit_score *= prefix_nodes[idx]['prob']
+-                    break
+-            if hit_keyword is not None:
+-                self.hit_score = math.sqrt(self.hit_score)
+-                break
+-
+-        duration = end - start
+-        if hit_keyword is not None:
+-            if self.hit_score >= self.threshold and \
+-                    self.min_frames <= duration <= self.max_frames \
+-                    and (self.last_active_pos == -1 or
+-                         end - self.last_active_pos >= self.interval_frames):
+-                self.activated = True
+-                self.last_active_pos = end
+-                logging.info(
+-                    f"Frame {absolute_time} detect {hit_keyword} "
+-                    f"from {start} to {end} frame. "
+-                    f"duration {duration}, score {self.hit_score}, Activated.")
+-
+-            elif self.last_active_pos > 0 and \
+-                    end - self.last_active_pos < self.interval_frames:
+-                logging.info(
+-                    f"Frame {absolute_time} detect {hit_keyword} "
+-                    f"from {start} to {end} frame. "
+-                    f"but interval {end-self.last_active_pos} "
+-                    f"is lower than {self.interval_frames}, Deactivated. ")
+-
+-            elif self.hit_score < self.threshold:
+-                logging.info(
+-                    f"Frame {absolute_time} detect {hit_keyword} "
+-                    f"from {start} to {end} frame. "
+-                    f"but {self.hit_score} "
+-                    f"is lower than {self.threshold}, Deactivated. ")
+-
+-            elif self.min_frames > duration or duration > self.max_frames:
+-                logging.info(
+-                    f"Frame {absolute_time} detect {hit_keyword} "
+-                    f"from {start} to {end} frame. "
+-                    f"but {duration} beyond range"
+-                    f"({self.min_frames}~{self.max_frames}), Deactivated. ")
+-
+-        self.result = {
+-            "state": 1 if self.activated else 0,
+-            "keyword": hit_keyword if self.activated else None,
+-            "start": start * self.resolution if self.activated else None,
+-            "end": end * self.resolution if self.activated else None,
+-            "score": self.hit_score if self.activated else None
+-        }
+-
+-    def forward(self, wave_chunk):
+-        feature = self.accept_wave(wave_chunk)
+-        if feature is None or feature.size(0) < 1:
+-            return {}  # # the feature is not enough to get result.
+-        feature = feature.unsqueeze(0)   # add a batch dimension
+-        logits, self.in_cache = self.model(feature, self.in_cache)
+-        probs = logits.softmax(2)  # (batch_size, maxlen, vocab_size)
+-        probs = probs[0].cpu()   # remove batch dimension
+-        for (t, prob) in enumerate(probs):
+-            t *= self.downsampling
+-            self.decode_keywords(t, prob)
+-            self.execute_detection(t)
+-
+-            if self.activated:
+-                self.reset()
+-                # since a chunk include about 30 frames,
+-                # once activated, we can jump the latter frames.
+-                # TODO: there should give another method to update result,
+-                #  avoiding self.result being cleared.
+-                break
+-
+-        # update frame offset
+-        self.total_frames += len(probs) * self.downsampling
+-        return self.result
+-
+-    def reset(self):
+-        self.cur_hyps = [(tuple(), (1.0, 0.0, []))]
+-        self.activated = False
+-        self.hit_score = 1.0
+-
+-    def reset_all(self):
+-        self.reset()
+-        self.wave_remained = np.array([])
+-        self.feature_remained = None
+-        self.feats_ctx_offset = 0  # after downsample, offset exist.
+-        self.in_cache = torch.zeros(0, 0, 0, dtype=torch.float)
+-        self.total_frames = 0   # frame offset, for absolute time
+-        self.last_active_pos = -1  # the last frame of being activated
+-        self.result = {}
+-
+-def demo():
+-    args = get_args()
+-    logging.basicConfig(level=logging.DEBUG,
+-                        format='%(asctime)s %(levelname)s %(message)s')
+-
+-    kws = KeyWordSpotter(args.checkpoint,
+-                         args.config,
+-                         args.token_file,
+-                         args.lexicon_file,
+-                         args.threshold,
+-                         args.min_frames,
+-                         args.max_frames,
+-                         args.interval_frames,
+-                         args.score_beam_size,
+-                         args.path_beam_size,
+-                         args.gpu,
+-                         args.jit_model)
+-
+-    # actually this could be done in __init__ method,
+-    # we pull it outside for changing keywords more freely.
+-    kws.set_keywords(args.keywords)
+-
+-    if args.wav_path:
+-        # Caution: input WAV should be standard 16k, 16 bits, 1 channel
+-        # In demo we read wave in non-streaming fashion.
+-        # with wave.open(args.wav_path, 'rb') as fin:
+-        #     assert fin.getnchannels() == 1
+-        #     wav = fin.readframes(fin.getnframes())
+-
+-        y, _ = librosa.load(args.wav_path, sr=16000, mono=True)
+-        # NOTE: model supports 16k sample_rate
+-        wav = (y * (1 << 15)).astype("int16").tobytes()
+-
+-        # We inference every 0.3 seconds, in streaming fashion.
+-        interval = int(0.3 * 16000) * 2
+-        for i in range(0, len(wav), interval):
+-            chunk_wav = wav[i: min(i + interval, len(wav))]
+-            result = kws.forward(chunk_wav)
+-            print(result)
+-
+-    fout = None
+-    if args.result_file:
+-        fout = open(args.result_file, 'w', encoding='utf-8')
+-
+-    if args.wav_scp:
+-        with open(args.wav_scp, 'r') as fscp:
+-            for line in fscp:
+-                line = line.strip().split()
+-                assert len(line) == 2, \
+-                    f"The scp should be in kaldi format: " \
+-                    f"\"utt_name wav_path\", but got {line}"
+-
+-                utt_name, wav_path = line[0], line[1]
+-                # with wave.open(args.wav_path, 'rb') as fin:
+-                #     assert fin.getnchannels() == 1
+-                #     wav = fin.readframes(fin.getnframes())
+-
+-                y, _ = librosa.load(args.wav_path, sr=16000, mono=True)
+-                # NOTE: model supports 16k sample_rate
+-                wav = (y * (1 << 15)).astype("int16").tobytes()
+-
+-                kws.reset_all()
+-                activated = False
+-
+-                # We inference every 0.3 seconds, in streaming fashion.
+-                interval = int(0.3 * 16000) * 2
+-                for i in range(0, len(wav), interval):
+-                    chunk_wav = wav[i: min(i + interval, len(wav))]
+-                    result = kws.forward(chunk_wav)
+-                    if 'state' in result and result['state'] == 1:
+-                        activated = True
+-                        if fout:
+-                            hit_keyword = result['keyword']
+-                            hit_score = result['score']
+-                            fout.write('{} detected {} {:.3f}\n'.format(
+-                                utt_name, hit_keyword, hit_score))
+-
+-                if not activated:
+-                    if fout:
+-                        fout.write('{} rejected\n'.format(utt_name))
+-
+-
+-    if fout:
+-        fout.close()
+-
+-if __name__ == '__main__':
+-    demo()
+diff --git a/wekws/bin/stream_score_ctc.py b/wekws/bin/stream_score_ctc.py
+deleted file mode 100644
+index c03e66b..0000000
+--- a/wekws/bin/stream_score_ctc.py
++++ /dev/null
+@@ -1,363 +0,0 @@
+-# Copyright (c) 2021 Binbin Zhang(binbzha@qq.com)
+-#               2022 Shaoqing Yu(954793264@qq.com)
+-#               2023 Jing Du(thuduj12@163.com)
+-#
+-# Licensed under the Apache License, Version 2.0 (the "License");
+-# you may not use this file except in compliance with the License.
+-# You may obtain a copy of the License at
+-#
+-#     http://www.apache.org/licenses/LICENSE-2.0
+-#
+-# Unless required by applicable law or agreed to in writing, software
+-# distributed under the License is distributed on an "AS IS" BASIS,
+-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-# See the License for the specific language governing permissions and
+-# limitations under the License.
+-
+-from __future__ import print_function
+-
+-import argparse
+-import copy
+-import logging
+-import os
+-import sys
+-import math
+-
+-import torch
+-import yaml
+-from collections import defaultdict
+-from torch.utils.data import DataLoader
+-
+-from wekws.dataset.dataset import Dataset
+-from wekws.model.kws_model import init_model
+-from wekws.utils.checkpoint import load_checkpoint
+-from tools.make_list import query_token_set, read_lexicon, read_token
+-
+-
+-def get_args():
+-    parser = argparse.ArgumentParser(description='recognize with your model')
+-    parser.add_argument('--config', required=True, help='config file')
+-    parser.add_argument('--test_data', required=True, help='test data file')
+-    parser.add_argument('--gpu',
+-                        type=int,
+-                        default=-1,
+-                        help='gpu id for this rank, -1 for cpu')
+-    parser.add_argument('--checkpoint', required=True, help='checkpoint model')
+-    parser.add_argument('--batch_size',
+-                        default=1,
+-                        type=int,
+-                        help='batch size for inference')
+-    parser.add_argument('--num_workers',
+-                        default=1,
+-                        type=int,
+-                        help='num of subprocess workers for reading')
+-    parser.add_argument('--pin_memory',
+-                        action='store_true',
+-                        default=False,
+-                        help='Use pinned memory buffers used for reading')
+-    parser.add_argument('--prefetch',
+-                        default=100,
+-                        type=int,
+-                        help='prefetch number')
+-    parser.add_argument('--score_file',
+-                        required=True,
+-                        help='output score file')
+-    parser.add_argument('--jit_model',
+-                        action='store_true',
+-                        default=False,
+-                        help='Use pinned memory buffers used for reading')
+-    parser.add_argument('--keywords', type=str, default=None,
+-                        help='the keywords, split with comma(,)')
+-    parser.add_argument('--token_file', type=str, default=None,
+-                        help='the path of tokens.txt')
+-    parser.add_argument('--lexicon_file', type=str, default=None,
+-                        help='the path of lexicon.txt')
+-    parser.add_argument('--score_beam_size',
+-                        default=3,
+-                        type=int,
+-                        help='The first prune beam, f'
+-                             'ilter out those frames with low scores.')
+-    parser.add_argument('--path_beam_size',
+-                        default=20,
+-                        type=int,
+-                        help='The second prune beam, '
+-                             'keep only path_beam_size candidates.')
+-    parser.add_argument('--threshold',
+-                        type=float,
+-                        default=0.0,
+-                        help='The threshold of kws. '
+-                             'If ctc_search probs exceed this value,'
+-                             'the keyword will be activated.')
+-    parser.add_argument('--min_frames',
+-                        default=5,
+-                        type=int,
+-                        help='The min frames of keyword duration.')
+-    parser.add_argument('--max_frames',
+-                        default=250,
+-                        type=int,
+-                        help='The max frames of keyword duration.')
+-
+-    args = parser.parse_args()
+-    return args
+-
+-
+-def is_sublist(main_list, check_list):
+-    if len(main_list) < len(check_list):
+-        return -1
+-
+-    if len(main_list) == len(check_list):
+-        return 0 if main_list == check_list else -1
+-
+-    for i in range(len(main_list) - len(check_list)):
+-        if main_list[i] == check_list[0]:
+-            for j in range(len(check_list)):
+-                if main_list[i + j] != check_list[j]:
+-                    break
+-            else:
+-                return i
+-    else:
+-        return -1
+-
+-
+-def main():
+-    args = get_args()
+-    logging.basicConfig(level=logging.DEBUG,
+-                        format='%(asctime)s %(levelname)s %(message)s')
+-    os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
+-
+-    with open(args.config, 'r') as fin:
+-        configs = yaml.load(fin, Loader=yaml.FullLoader)
+-
+-    test_conf = copy.deepcopy(configs['dataset_conf'])
+-    test_conf['filter_conf']['max_length'] = 102400
+-    test_conf['filter_conf']['min_length'] = 0
+-    test_conf['speed_perturb'] = False
+-    test_conf['spec_aug'] = False
+-    test_conf['shuffle'] = False
+-    test_conf['feature_extraction_conf']['dither'] = 0.0
+-    test_conf['batch_conf']['batch_size'] = args.batch_size
+-
+-    downsampling_factor = test_conf.get('frame_skip', 1)
+-
+-    test_dataset = Dataset(args.test_data, test_conf)
+-    test_data_loader = DataLoader(test_dataset,
+-                                  batch_size=None,
+-                                  pin_memory=args.pin_memory,
+-                                  num_workers=args.num_workers,
+-                                  prefetch_factor=args.prefetch)
+-
+-    if args.jit_model:
+-        model = torch.jit.load(args.checkpoint)
+-        # For script model, only cpu is supported.
+-        device = torch.device('cpu')
+-    else:
+-        # Init asr model from configs
+-        model = init_model(configs['model'])
+-        load_checkpoint(model, args.checkpoint)
+-        use_cuda = args.gpu >= 0 and torch.cuda.is_available()
+-        device = torch.device('cuda' if use_cuda else 'cpu')
+-    model = model.to(device)
+-    model.eval()
+-    score_abs_path = os.path.abspath(args.score_file)
+-
+-    token_table = read_token(args.token_file)
+-    lexicon_table = read_lexicon(args.lexicon_file)
+-    # 4. parse keywords tokens
+-    assert args.keywords is not None, 'at least one keyword is needed'
+-    logging.info(f"keywords is {args.keywords}, "
+-                 f"Chinese is converted into Unicode.")
+-    keywords_str = args.keywords.encode('utf-8').decode('unicode_escape')
+-    keywords_list = keywords_str.strip().replace(' ', '').split(',')
+-    keywords_token = {}
+-    keywords_idxset = {0}
+-    keywords_strset = {'<blk>'}
+-    keywords_tokenmap = {'<blk>': 0}
+-    for keyword in keywords_list:
+-        strs, indexes = query_token_set(keyword, token_table, lexicon_table)
+-        keywords_token[keyword] = {}
+-        keywords_token[keyword]['token_id'] = indexes
+-        keywords_token[keyword]['token_str'] = ''.join('%s ' % str(i)
+-                                                       for i in indexes)
+-        [keywords_strset.add(i) for i in strs]
+-        [keywords_idxset.add(i) for i in indexes]
+-        for txt, idx in zip(strs, indexes):
+-            if keywords_tokenmap.get(txt, None) is None:
+-                keywords_tokenmap[txt] = idx
+-
+-    token_print = ''
+-    for txt, idx in keywords_tokenmap.items():
+-        token_print += f'{txt}({idx}) '
+-    logging.info(f'Token set is: {token_print}')
+-
+-    with torch.no_grad(), open(score_abs_path, 'w', encoding='utf8') as fout:
+-        for batch_idx, batch in enumerate(test_data_loader):
+-            keys, feats, target, lengths, target_lengths = batch
+-            feats = feats.to(device)
+-            lengths = lengths.to(device)
+-            logits, _ = model(feats)
+-            logits = logits.softmax(2)  # (batch_size, maxlen, vocab_size)
+-            logits = logits.cpu()
+-            for i in range(len(keys)):
+-                key = keys[i]
+-                score = logits[i][:lengths[i]]
+-                # hyps = ctc_prefix_beam_search(score, lengths[i],
+-                #                               keywords_idxset)
+-                maxlen = score.size(0)
+-                ctc_probs = score
+-                cur_hyps = [(tuple(), (1.0, 0.0, []))]
+-
+-                hit_keyword = None
+-                activated = False
+-                hit_score = 1.0
+-                start = 0
+-                end = 0
+-
+-                # 2. CTC beam search step by step
+-                for t in range(0, maxlen):
+-                    probs = ctc_probs[t]  # (vocab_size,)
+-                    t *= downsampling_factor   # the real time
+-                    # key: prefix, value (pb, pnb), default value(-inf, -inf)
+-                    next_hyps = defaultdict(lambda: (0.0, 0.0, []))
+-
+-                    # 2.1 First beam prune: select topk best
+-                    top_k_probs, top_k_index = probs.topk(args.score_beam_size)
+-
+-                    # filter prob score that is too small
+-                    filter_probs = []
+-                    filter_index = []
+-                    for prob, idx in zip(
+-                            top_k_probs.tolist(), top_k_index.tolist()):
+-                        if keywords_idxset is not None:
+-                            if prob > 0.05 and idx in keywords_idxset:
+-                                filter_probs.append(prob)
+-                                filter_index.append(idx)
+-                        else:
+-                            if prob > 0.05:
+-                                filter_probs.append(prob)
+-                                filter_index.append(idx)
+-
+-                    if len(filter_index) == 0:
+-                        continue
+-
+-                    for s in filter_index:
+-                        ps = probs[s].item()
+-
+-                        for prefix, (pb, pnb, cur_nodes) in cur_hyps:
+-                            last = prefix[-1] if len(prefix) > 0 else None
+-                            if s == 0:  # blank
+-                                n_pb, n_pnb, nodes = next_hyps[prefix]
+-                                n_pb = n_pb + pb * ps + pnb * ps
+-                                nodes = cur_nodes.copy()
+-                                next_hyps[prefix] = (n_pb, n_pnb, nodes)
+-                            elif s == last:
+-                                if not math.isclose(pnb, 0.0, abs_tol=0.000001):
+-                                    # Update *ss -> *s;
+-                                    n_pb, n_pnb, nodes = next_hyps[prefix]
+-                                    n_pnb = n_pnb + pnb * ps
+-                                    nodes = cur_nodes.copy()
+-                                    # update frame and prob
+-                                    if ps > nodes[-1]['prob']:
+-                                        nodes[-1]['prob'] = ps
+-                                        nodes[-1]['frame'] = t
+-                                    next_hyps[prefix] = (n_pb, n_pnb, nodes)
+-
+-                                if not math.isclose(pb, 0.0, abs_tol=0.000001):
+-                                    # Update *s-s -> *ss, - is for blank
+-                                    n_prefix = prefix + (s,)
+-                                    n_pb, n_pnb, nodes = next_hyps[n_prefix]
+-                                    n_pnb = n_pnb + pb * ps
+-                                    nodes = cur_nodes.copy()
+-                                    nodes.append(dict(
+-                                        token=s, frame=t, prob=ps))
+-                                    next_hyps[n_prefix] = (n_pb, n_pnb, nodes)
+-                            else:
+-                                n_prefix = prefix + (s,)
+-                                n_pb, n_pnb, nodes = next_hyps[n_prefix]
+-                                if nodes:
+-                                    # update frame and prob
+-                                    if ps > nodes[-1]['prob']:
+-                                        # nodes[-1]['prob'] = ps
+-                                        # nodes[-1]['frame'] = t
+-                                        # avoid change other beam has this node.
+-                                        nodes.pop()
+-                                        nodes.append(dict(
+-                                            token=s, frame=t, prob=ps))
+-                                else:
+-                                    nodes = cur_nodes.copy()
+-                                    nodes.append(dict(
+-                                        token=s, frame=t, prob=ps))
+-                                n_pnb = n_pnb + pb * ps + pnb * ps
+-                                next_hyps[n_prefix] = (n_pb, n_pnb, nodes)
+-
+-                    # 2.2 Second beam prune
+-                    next_hyps = sorted(
+-                        next_hyps.items(),
+-                        key=lambda x: (x[1][0] + x[1][1]), reverse=True)
+-
+-                    cur_hyps = next_hyps[:args.path_beam_size]
+-
+-                    hyps = [(y[0], y[1][0] + y[1][1], y[1][2])
+-                            for y in cur_hyps]
+-
+-                    for one_hyp in hyps:
+-                        prefix_ids = one_hyp[0]
+-                        # path_score = one_hyp[1]
+-                        prefix_nodes = one_hyp[2]
+-                        assert len(prefix_ids) == len(prefix_nodes)
+-                        for word in keywords_token.keys():
+-                            lab = keywords_token[word]['token_id']
+-                            offset = is_sublist(prefix_ids, lab)
+-                            if offset != -1:
+-                                hit_keyword = word
+-                                start = prefix_nodes[offset]['frame']
+-                                end = prefix_nodes[
+-                                    offset + len(lab) - 1]['frame']
+-                                for idx in range(offset, offset + len(lab)):
+-                                    hit_score *= prefix_nodes[idx]['prob']
+-                                break
+-                        if hit_keyword is not None:
+-                            hit_score = math.sqrt(hit_score)
+-                            break
+-
+-                    duration = end - start
+-                    if hit_keyword is not None:
+-                        if hit_score >= args.threshold and \
+-                                args.min_frames <= duration <= args.max_frames:
+-                            activated = True
+-                            fout.write('{} detected {} {:.3f}\n'.format(
+-                                key, hit_keyword, hit_score))
+-                            logging.info(
+-                                f"batch:{batch_idx}_{i} detect {hit_keyword} "
+-                                f"in {key} from {start} to {end} frame. "
+-                                f"duration {duration}, s"
+-                                f"core {hit_score} Activated.")
+-
+-                            # clear the ctc_prefix buffer, and hit_keyword
+-                            cur_hyps = [(tuple(), (1.0, 0.0, []))]
+-                            hit_keyword = None
+-                            hit_score = 1.0
+-                        elif hit_score < args.threshold:
+-                            logging.info(
+-                                f"batch:{batch_idx}_{i} detect {hit_keyword} "
+-                                f"in {key} from {start} to {end} frame. "
+-                                f"but {hit_score} less than "
+-                                f"{args.threshold}, Deactivated. ")
+-                        elif args.min_frames > duration \
+-                                or duration > args.max_frames:
+-                            logging.info(
+-                                f"batch:{batch_idx}_{i} detect {hit_keyword} "
+-                                f"in {key} from {start} to {end} frame. "
+-                                f"but {duration} beyond "
+-                                f"range({args.min_frames}~{args.max_frames}), "
+-                                f"Deactivated. ")
+-                if not activated:
+-                    fout.write('{} rejected\n'.format(key))
+-                    logging.info(f"batch:{batch_idx}_{i} {key} Deactivated.")
+-
+-            if batch_idx % 10 == 0:
+-                print('Progress batch {}'.format(batch_idx))
+-                sys.stdout.flush()
+-
+-
+-if __name__ == '__main__':
+-    main()
+diff --git a/wekws/bin/train.py b/wekws/bin/train.py
+index c88ea1f..cea5414 100644
+--- a/wekws/bin/train.py
++++ b/wekws/bin/train.py
+@@ -30,6 +30,7 @@ from wekws.dataset.dataset import Dataset
+ from wekws.utils.checkpoint import load_checkpoint, save_checkpoint
+ from wekws.model.kws_model import init_model
+ from wekws.utils.executor import Executor
++from wekws.utils.file_utils import read_symbol_table
+ from wekws.utils.train_utils import count_parameters, set_mannul_seed
+ 
+ 
+@@ -83,6 +84,9 @@ def get_args():
+     parser.add_argument('--noise_lmdb',
+                         default=None,
+                         help='noise lmdb file')
++    parser.add_argument('--symbol_table',
++                        default=None,
++                        help='model unit symbol table for training')
+ 
+     args = parser.parse_args()
+     return args
+@@ -112,11 +116,16 @@ def main():
+     cv_conf['spec_aug'] = False
+     cv_conf['shuffle'] = False
+ 
++    if args.symbol_table is not None:
++        symbol_table = read_symbol_table(args.symbol_table)
++    else:
++        symbol_table = None
+     train_dataset = Dataset(args.train_data,
++                            symbol_table,
+                             train_conf,
+                             reverb_lmdb=args.reverb_lmdb,
+                             noise_lmdb=args.noise_lmdb)
+-    cv_dataset = Dataset(args.cv_data, cv_conf)
++    cv_dataset = Dataset(args.cv_data, symbol_table, cv_conf)
+ 
+     train_data_loader = DataLoader(train_dataset,
+                                    batch_size=None,
+@@ -134,8 +143,7 @@ def main():
+     output_dim = args.num_keywords
+ 
+     # Write model_dir/config.yaml for inference and export
+-    if 'input_dim' not in configs['model']:
+-        configs['model']['input_dim'] = input_dim
++    configs['model']['input_dim'] = input_dim
+     configs['model']['output_dim'] = output_dim
+     if args.cmvn_file is not None:
+         configs['model']['cmvn'] = {}
+@@ -157,16 +165,8 @@ def main():
+     # Try to export the model by script, if fails, we should refine
+     # the code to satisfy the script export requirements
+     if rank == 0:
+-        pass
+-        # TODO: for now streaming FSMN do not support export to JITScript,
+-        # TODO: because there is nn.Sequential with Tuple input
+-        #  in current FSMN modules.
+-        #  the issue is in https://stackoverflow.com/questions/75714299/
+-        #  pytorch-jit-script-error-when-sequential-container-
+-        #  takes-a-tuple-input/76553450#76553450
+-
+-        # script_model = torch.jit.script(model)
+-        # script_model.save(os.path.join(args.model_dir, 'init.zip'))
++        script_model = torch.jit.script(model)
++        script_model.save(os.path.join(args.model_dir, 'init.zip'))
+     executor = Executor()
+     # If specify checkpoint, load some info from checkpoint
+     if args.checkpoint is not None:
+@@ -222,7 +222,7 @@ def main():
+         logging.info('Epoch {} TRAIN info lr {}'.format(epoch, lr))
+         executor.train(model, optimizer, train_data_loader, device, writer,
+                        training_config)
+-        cv_loss, cv_acc = executor.cv(model, cv_data_loader, device,
++        cv_loss, cv_ctc_loss, cv_acc = executor.cv(model, cv_data_loader, device,
+                                       training_config)
+         logging.info('Epoch {} CV info cv_loss {} cv_acc {}'.format(
+             epoch, cv_loss, cv_acc))
+@@ -235,6 +235,7 @@ def main():
+                 'cv_loss': cv_loss,
+             })
+             writer.add_scalar('epoch/cv_loss', cv_loss, epoch)
++            writer.add_scalar('epoch/cv_ctc_loss', cv_ctc_loss, epoch)
+             writer.add_scalar('epoch/cv_acc', cv_acc, epoch)
+             writer.add_scalar('epoch/lr', lr, epoch)
+         final_epoch = epoch
+diff --git a/wekws/dataset/dataset.py b/wekws/dataset/dataset.py
+index 897b87c..c63c93a 100644
+--- a/wekws/dataset/dataset.py
++++ b/wekws/dataset/dataset.py
+@@ -113,7 +113,9 @@ class DataList(IterableDataset):
+             yield data
+ 
+ 
+-def Dataset(data_list_file, conf,
++def Dataset(data_list_file,
++            symbol_table,
++            conf,
+             partition=True,
+             reverb_lmdb=None,
+             noise_lmdb=None):
+@@ -133,6 +135,8 @@ def Dataset(data_list_file, conf,
+     shuffle = conf.get('shuffle', True)
+     dataset = DataList(lists, shuffle=shuffle, partition=partition)
+     dataset = Processor(dataset, processor.parse_raw)
++    if symbol_table is not None:
++        dataset = Processor(dataset, processor.token2label, symbol_table)
+     filter_conf = conf.get('filter_conf', {})
+     dataset = Processor(dataset, processor.filter, **filter_conf)
+ 
+@@ -162,16 +166,6 @@ def Dataset(data_list_file, conf,
+         spec_aug_conf = conf.get('spec_aug_conf', {})
+         dataset = Processor(dataset, processor.spec_aug, **spec_aug_conf)
+ 
+-    context_expansion = conf.get('context_expansion', False)
+-    if context_expansion:
+-        context_expansion_conf = conf.get('context_expansion_conf', {})
+-        dataset = Processor(dataset, processor.context_expansion,
+-                            **context_expansion_conf)
+-
+-    frame_skip = conf.get('frame_skip', 1)
+-    if frame_skip > 1:
+-        dataset = Processor(dataset, processor.frame_skip, frame_skip)
+-
+     if shuffle:
+         shuffle_conf = conf.get('shuffle_conf', {})
+         dataset = Processor(dataset, processor.shuffle, **shuffle_conf)
+@@ -184,6 +178,9 @@ def Dataset(data_list_file, conf,
+ 
+ if __name__ == '__main__':
+     import sys
+-    dataset = Dataset(sys.argv[1], {})
++    from wekws.utils.file_utils import read_symbol_table
++    symbol_table = read_symbol_table('/home/mlxu/github/wekws/wekws/dataset/symbol_table.dict')
++    dataset = Dataset(sys.argv[1], symbol_table, {})
+     for data in dataset:
+         print(data)
++        break
+diff --git a/wekws/dataset/processor.py b/wekws/dataset/processor.py
+index bb1dde7..948ba57 100644
+--- a/wekws/dataset/processor.py
++++ b/wekws/dataset/processor.py
+@@ -41,14 +41,16 @@ def parse_raw(data):
+         obj = json.loads(json_line)
+         assert 'key' in obj
+         assert 'wav' in obj
+-        assert 'txt' in obj
++        assert 'label' in obj
+         key = obj['key']
+         wav_file = obj['wav']
+-        txt = obj['txt']
++        label = obj['label']
++        txt = obj.get('txt', None)
+         try:
+             waveform, sample_rate = torchaudio.load(wav_file)
+             example = dict(key=key,
+-                           label=txt,
++                           label=label,
++                           txt=txt,
+                            wav=waveform,
+                            sample_rate=sample_rate)
+             yield example
+@@ -56,6 +58,21 @@ def parse_raw(data):
+             logging.warning('Failed to read {}'.format(wav_file))
+ 
+ 
++def token2label(data, symbol_table):
++    # print(symbol_table)
++    for sample in data:
++        if sample['txt']:
++            tokens = sample['txt'].strip().split()
++            label = []
++            for ch in tokens:
++                if ch in symbol_table:
++                    label.append(symbol_table[ch])
++                elif '<unk>' in symbol_table:
++                    label.append(symbol_table['<unk>'])
++            sample['ctc_label'] = label
++        yield sample
++
++
+ def filter(data, max_length=10240, min_length=10):
+     """ Filter sample according to feature and label length
+         Inplace operation.
+@@ -200,7 +217,8 @@ def compute_fbank(data,
+                           dither=dither,
+                           energy_floor=0.0,
+                           sample_frequency=sample_rate)
+-        yield dict(key=sample['key'], label=sample['label'], feat=mat)
++        yield dict(key=sample['key'], label=sample['label'], feat=mat,
++                   ctc_label=sample.get('ctc_label', [-1]))
+ 
+ 
+ def spec_aug(data, num_t_mask=2, num_f_mask=2, max_t=50, max_f=10):
+@@ -263,51 +281,6 @@ def shuffle(data, shuffle_size=1000):
+     for x in buf:
+         yield x
+ 
+-def context_expansion(data, left=1, right=1):
+-    """ expand left and right frames
+-        Args:
+-            data: Iterable[{key, feat, label}]
+-            left (int): feature left context frames
+-            right (int): feature right context frames
+-
+-        Returns:
+-            data: Iterable[{key, feat, label}]
+-    """
+-    for sample in data:
+-        index = 0
+-        feats = sample['feat']
+-        ctx_dim = feats.shape[0]
+-        ctx_frm = feats.shape[1] * (left + right + 1)
+-        feats_ctx = torch.zeros(ctx_dim, ctx_frm, dtype=torch.float32)
+-        for lag in range(-left, right + 1):
+-            feats_ctx[:, index:index + feats.shape[1]] = torch.roll(
+-                feats, -lag, 0)
+-            index = index + feats.shape[1]
+-
+-        # replication pad left margin
+-        for idx in range(left):
+-            for cpx in range(left - idx):
+-                feats_ctx[idx, cpx * feats.shape[1]:(cpx + 1)
+-                          * feats.shape[1]] = feats_ctx[left, :feats.shape[1]]
+-
+-        feats_ctx = feats_ctx[:feats_ctx.shape[0] - right]
+-        sample['feat'] = feats_ctx
+-        yield sample
+-
+-
+-def frame_skip(data, skip_rate=1):
+-    """ skip frame
+-        Args:
+-            data: Iterable[{key, feat, label}]
+-            skip_rate (int): take every N-frames for model input
+-
+-        Returns:
+-            data: Iterable[{key, feat, label}]
+-    """
+-    for sample in data:
+-        feats_skip = sample['feat'][::skip_rate, :]
+-        sample['feat'] = feats_skip
+-        yield sample
+ 
+ def batch(data, batch_size=16):
+     """ Static batch the data by `batch_size`
+@@ -347,24 +320,21 @@ def padding(data):
+             [sample[i]['feat'].size(0) for i in order], dtype=torch.int32)
+         sorted_feats = [sample[i]['feat'] for i in order]
+         sorted_keys = [sample[i]['key'] for i in order]
++        sorted_labels = torch.tensor([sample[i]['label'] for i in order],
++                                     dtype=torch.int64)
++        sorted_ctc_labels = [
++            torch.tensor(sample[i]['ctc_label'], dtype=torch.int64) for i in order
++        ]
++        ctc_label_lengths = torch.tensor([x.size(0) for x in sorted_ctc_labels],
++                                         dtype=torch.int32)
+         padded_feats = pad_sequence(sorted_feats,
+                                     batch_first=True,
+                                     padding_value=0)
+-
+-        if isinstance(sample[0]['label'], int):
+-            padded_labels = torch.tensor([sample[i]['label'] for i in order],
+-                                         dtype=torch.int32)
+-            label_lengths = torch.tensor([1 for i in order],
+-                                         dtype=torch.int32)
+-        else:
+-            sorted_labels = [
+-                torch.tensor(sample[i]['label'], dtype=torch.int32) for i in order
+-            ]
+-            label_lengths = torch.tensor([len(sample[i]['label']) for i in order],
+-                                         dtype=torch.int32)
+-            padded_labels = pad_sequence(
+-                sorted_labels, batch_first=True, padding_value=-1)
+-        yield (sorted_keys, padded_feats, padded_labels, feats_lengths, label_lengths)
++        padded_ctc_labels = pad_sequence(sorted_ctc_labels,
++                                         batch_first=True,
++                                         padding_value=-1)
++        yield (sorted_keys, padded_feats, sorted_labels, padded_ctc_labels,
++               feats_lengths, ctc_label_lengths)
+ 
+ 
+ def add_reverb(data, reverb_source, aug_prob):
+@@ -377,8 +347,6 @@ def add_reverb(data, reverb_source, aug_prob):
+             rir_io = io.BytesIO(rir_data)
+             _, rir_audio = wavfile.read(rir_io)
+             rir_audio = rir_audio.astype(np.float32)
+-            if len(rir_audio.shape) > 1:
+-                rir_audio = rir_audio[:, 0]
+             rir_audio = rir_audio / np.sqrt(np.sum(rir_audio**2))
+             out_audio = signal.convolve(audio, rir_audio,
+                                         mode='full')[:audio_len]
+@@ -407,8 +375,6 @@ def add_noise(data, noise_source, aug_prob):
+                 snr_range = [0, 15]
+             _, noise_audio = wavfile.read(io.BytesIO(noise_data))
+             noise_audio = noise_audio.astype(np.float32)
+-            if len(noise_audio.shape) > 1:
+-                noise_audio = noise_audio[:, 0]
+             if noise_audio.shape[0] > audio_len:
+                 start = random.randint(0, noise_audio.shape[0] - audio_len)
+                 noise_audio = noise_audio[start:start + audio_len]
+diff --git a/wekws/model/fsmn.py b/wekws/model/fsmn.py
+deleted file mode 100644
+index 555c760..0000000
+--- a/wekws/model/fsmn.py
++++ /dev/null
+@@ -1,560 +0,0 @@
+-'''
+-FSMN implementation.
+-
+-Copyright: 2022-03-09 yueyue.nyy
+-           2023       Jing Du
+-'''
+-
+-from typing import Tuple
+-
+-import numpy as np
+-import torch
+-import torch.nn as nn
+-import torch.nn.functional as F
+-
+-
+-def toKaldiMatrix(np_mat):
+-    np.set_printoptions(threshold=np.inf, linewidth=np.nan)
+-    out_str = str(np_mat)
+-    out_str = out_str.replace('[', '')
+-    out_str = out_str.replace(']', '')
+-    return '[ %s ]\n' % out_str
+-
+-
+-def printTensor(torch_tensor):
+-    re_str = ''
+-    x = torch_tensor.detach().squeeze().numpy()
+-    re_str += toKaldiMatrix(x)
+-    # re_str += '<!EndOfComponent>\n'
+-    print(re_str)
+-
+-
+-class LinearTransform(nn.Module):
+-
+-    def __init__(self, input_dim, output_dim):
+-        super(LinearTransform, self).__init__()
+-        self.input_dim = input_dim
+-        self.output_dim = output_dim
+-        self.linear = nn.Linear(input_dim, output_dim, bias=False)
+-        self.quant = torch.quantization.QuantStub()
+-        self.dequant = torch.quantization.DeQuantStub()
+-
+-    def forward(self,
+-                input: Tuple[torch.Tensor, torch.Tensor]):
+-        if isinstance(input, tuple):
+-            input, in_cache = input
+-        else:
+-            in_cache = torch.zeros(0, 0, 0, 0, dtype=torch.float)
+-        output = self.quant(input)
+-        output = self.linear(output)
+-        output = self.dequant(output)
+-
+-        return (output, in_cache)
+-
+-    def to_kaldi_net(self):
+-        re_str = ''
+-        re_str += '<LinearTransform> %d %d\n' % (self.output_dim,
+-                                                 self.input_dim)
+-        re_str += '<LearnRateCoef> 1\n'
+-
+-        linear_weights = self.state_dict()['linear.weight']
+-        x = linear_weights.squeeze().numpy()
+-        re_str += toKaldiMatrix(x)
+-        # re_str += '<!EndOfComponent>\n'
+-
+-        return re_str
+-
+-    def to_pytorch_net(self, fread):
+-        linear_line = fread.readline()
+-        linear_split = linear_line.strip().split()
+-        assert len(linear_split) == 3
+-        assert linear_split[0] == '<LinearTransform>'
+-        self.output_dim = int(linear_split[1])
+-        self.input_dim = int(linear_split[2])
+-
+-        learn_rate_line = fread.readline()
+-        assert learn_rate_line.find('LearnRateCoef') != -1
+-
+-        self.linear.reset_parameters()
+-
+-        # linear_weights = self.state_dict()['linear.weight']
+-        # print(linear_weights.shape)
+-        new_weights = torch.zeros((self.output_dim, self.input_dim),
+-                                  dtype=torch.float32)
+-        for i in range(self.output_dim):
+-            line = fread.readline()
+-            splits = line.strip().strip('[]').strip().split()
+-            assert len(splits) == self.input_dim
+-            cols = torch.tensor([float(item) for item in splits],
+-                                dtype=torch.float32)
+-            new_weights[i, :] = cols
+-
+-        self.linear.weight.data = new_weights
+-
+-
+-class AffineTransform(nn.Module):
+-
+-    def __init__(self, input_dim, output_dim):
+-        super(AffineTransform, self).__init__()
+-        self.input_dim = input_dim
+-        self.output_dim = output_dim
+-
+-        self.linear = nn.Linear(input_dim, output_dim)
+-        self.quant = torch.quantization.QuantStub()
+-        self.dequant = torch.quantization.DeQuantStub()
+-
+-    def forward(self,
+-                input: Tuple[torch.Tensor, torch.Tensor]):
+-        if isinstance(input, tuple):
+-            input, in_cache = input
+-        else:
+-            in_cache = torch.zeros(0, 0, 0, 0, dtype=torch.float)
+-        output = self.quant(input)
+-        output = self.linear(output)
+-        output = self.dequant(output)
+-
+-        return (output, in_cache)
+-
+-    def to_kaldi_net(self):
+-        re_str = ''
+-        re_str += '<AffineTransform> %d %d\n' % (self.output_dim,
+-                                                 self.input_dim)
+-        re_str += '<LearnRateCoef> 1 <BiasLearnRateCoef> 1 <MaxNorm> 0\n'
+-
+-        linear_weights = self.state_dict()['linear.weight']
+-        x = linear_weights.squeeze().numpy()
+-        re_str += toKaldiMatrix(x)
+-
+-        linear_bias = self.state_dict()['linear.bias']
+-        x = linear_bias.squeeze().numpy()
+-        re_str += toKaldiMatrix(x)
+-        # re_str += '<!EndOfComponent>\n'
+-
+-        return re_str
+-
+-    def to_pytorch_net(self, fread):
+-        affine_line = fread.readline()
+-        affine_split = affine_line.strip().split()
+-        assert len(affine_split) == 3
+-        assert affine_split[0] == '<AffineTransform>'
+-        self.output_dim = int(affine_split[1])
+-        self.input_dim = int(affine_split[2])
+-        print('AffineTransform output/input dim: %d %d' %
+-              (self.output_dim, self.input_dim))
+-
+-        learn_rate_line = fread.readline()
+-        assert learn_rate_line.find('LearnRateCoef') != -1
+-
+-        # linear_weights = self.state_dict()['linear.weight']
+-        # print(linear_weights.shape)
+-        self.linear.reset_parameters()
+-
+-        new_weights = torch.zeros((self.output_dim, self.input_dim),
+-                                  dtype=torch.float32)
+-        for i in range(self.output_dim):
+-            line = fread.readline()
+-            splits = line.strip().strip('[]').strip().split()
+-            assert len(splits) == self.input_dim
+-            cols = torch.tensor([float(item) for item in splits],
+-                                dtype=torch.float32)
+-            new_weights[i, :] = cols
+-
+-        self.linear.weight.data = new_weights
+-
+-        # linear_bias = self.state_dict()['linear.bias']
+-        # print(linear_bias.shape)
+-        bias_line = fread.readline()
+-        splits = bias_line.strip().strip('[]').strip().split()
+-        assert len(splits) == self.output_dim
+-        new_bias = torch.tensor([float(item) for item in splits],
+-                                dtype=torch.float32)
+-
+-        self.linear.bias.data = new_bias
+-
+-
+-class FSMNBlock(nn.Module):
+-
+-    def __init__(
+-        self,
+-        input_dim: int,
+-        output_dim: int,
+-        lorder=None,
+-        rorder=None,
+-        lstride=1,
+-        rstride=1,
+-    ):
+-        super(FSMNBlock, self).__init__()
+-
+-        self.dim = input_dim
+-
+-        if lorder is None:
+-            return
+-
+-        self.lorder = lorder
+-        self.rorder = rorder
+-        self.lstride = lstride
+-        self.rstride = rstride
+-
+-        self.conv_left = nn.Conv2d(
+-            self.dim,
+-            self.dim, [lorder, 1],
+-            dilation=[lstride, 1],
+-            groups=self.dim,
+-            bias=False)
+-
+-        if rorder > 0:
+-            self.conv_right = nn.Conv2d(
+-                self.dim,
+-                self.dim, [rorder, 1],
+-                dilation=[rstride, 1],
+-                groups=self.dim,
+-                bias=False)
+-        else:
+-            self.conv_right = None
+-
+-        self.quant = torch.quantization.QuantStub()
+-        self.dequant = torch.quantization.DeQuantStub()
+-
+-    def forward(self,
+-                input: Tuple[torch.Tensor, torch.Tensor]):
+-        if isinstance(input, tuple):
+-            input, in_cache = input
+-        else :
+-            in_cache = torch.zeros(0, 0, 0, 0, dtype=torch.float)
+-        x = torch.unsqueeze(input, 1)
+-        x_per = x.permute(0, 3, 2, 1)
+-
+-        if in_cache is None or len(in_cache) == 0 :
+-            x_pad = F.pad(x_per, [0, 0, (self.lorder - 1) * self.lstride
+-                                  + self.rorder * self.rstride, 0])
+-        else:
+-            in_cache = in_cache.to(x_per.device)
+-            x_pad = torch.cat((in_cache, x_per), dim=2)
+-        in_cache = x_pad[:, :, -((self.lorder - 1) * self.lstride
+-                                 + self.rorder * self.rstride):, :]
+-        y_left = x_pad[:, :, :-self.rorder * self.rstride, :]
+-        y_left = self.quant(y_left)
+-        y_left = self.conv_left(y_left)
+-        y_left = self.dequant(y_left)
+-        out = x_pad[:, :, (self.lorder - 1) * self.lstride: -self.rorder *
+-                    self.rstride, :] + y_left
+-
+-        if self.conv_right is not None:
+-            # y_right = F.pad(x_per, [0, 0, 0, (self.rorder) * self.rstride])
+-            y_right = x_pad[:, :, -(
+-                x_per.size(2) + self.rorder * self.rstride):, :]
+-            y_right = y_right[:, :, self.rstride:, :]
+-            y_right = self.quant(y_right)
+-            y_right = self.conv_right(y_right)
+-            y_right = self.dequant(y_right)
+-            out += y_right
+-
+-        out_per = out.permute(0, 3, 2, 1)
+-        output = out_per.squeeze(1)
+-
+-        return (output, in_cache)
+-
+-    def to_kaldi_net(self):
+-        re_str = ''
+-        re_str += '<Fsmn> %d %d\n' % (self.dim, self.dim)
+-        re_str += '<LearnRateCoef> %d <LOrder> %d <ROrder> %d ' \
+-            '<LStride> %d <RStride> %d <MaxNorm> 0\n' % (
+-                1, self.lorder, self.rorder, self.lstride, self.rstride)
+-
+-        # print(self.conv_left.weight,self.conv_right.weight)
+-        lfiters = self.state_dict()['conv_left.weight']
+-        x = np.flipud(lfiters.squeeze().numpy().T)
+-        re_str += toKaldiMatrix(x)
+-
+-        if self.conv_right is not None:
+-            rfiters = self.state_dict()['conv_right.weight']
+-            x = (rfiters.squeeze().numpy().T)
+-            re_str += toKaldiMatrix(x)
+-            # re_str += '<!EndOfComponent>\n'
+-
+-        return re_str
+-
+-    def to_pytorch_net(self, fread):
+-        fsmn_line = fread.readline()
+-        fsmn_split = fsmn_line.strip().split()
+-        assert len(fsmn_split) == 3
+-        assert fsmn_split[0] == '<Fsmn>'
+-        self.dim = int(fsmn_split[1])
+-
+-        params_line = fread.readline()
+-        params_split = params_line.strip().strip('[]').strip().split()
+-        assert len(params_split) == 12
+-        assert params_split[0] == '<LearnRateCoef>'
+-        assert params_split[2] == '<LOrder>'
+-        self.lorder = int(params_split[3])
+-        assert params_split[4] == '<ROrder>'
+-        self.rorder = int(params_split[5])
+-        assert params_split[6] == '<LStride>'
+-        self.lstride = int(params_split[7])
+-        assert params_split[8] == '<RStride>'
+-        self.rstride = int(params_split[9])
+-        assert params_split[10] == '<MaxNorm>'
+-
+-        # lfilters = self.state_dict()['conv_left.weight']
+-        # print(lfilters.shape)
+-        print('read conv_left weight')
+-        new_lfilters = torch.zeros((self.lorder, 1, self.dim, 1),
+-                                   dtype=torch.float32)
+-        for i in range(self.lorder):
+-            print('read conv_left weight -- %d' % i)
+-            line = fread.readline()
+-            splits = line.strip().strip('[]').strip().split()
+-            assert len(splits) == self.dim
+-            cols = torch.tensor([float(item) for item in splits],
+-                                dtype=torch.float32)
+-            new_lfilters[self.lorder - 1 - i, 0, :, 0] = cols
+-
+-        new_lfilters = torch.transpose(new_lfilters, 0, 2)
+-        # print(new_lfilters.shape)
+-
+-        self.conv_left.reset_parameters()
+-        self.conv_left.weight.data = new_lfilters
+-        # print(self.conv_left.weight.shape)
+-
+-        if self.rorder > 0:
+-            # rfilters = self.state_dict()['conv_right.weight']
+-            # print(rfilters.shape)
+-            print('read conv_right weight')
+-            new_rfilters = torch.zeros((self.rorder, 1, self.dim, 1),
+-                                       dtype=torch.float32)
+-            line = fread.readline()
+-            for i in range(self.rorder):
+-                print('read conv_right weight -- %d' % i)
+-                line = fread.readline()
+-                splits = line.strip().strip('[]').strip().split()
+-                assert len(splits) == self.dim
+-                cols = torch.tensor([float(item) for item in splits],
+-                                    dtype=torch.float32)
+-                new_rfilters[i, 0, :, 0] = cols
+-
+-            new_rfilters = torch.transpose(new_rfilters, 0, 2)
+-            # print(new_rfilters.shape)
+-            self.conv_right.reset_parameters()
+-            self.conv_right.weight.data = new_rfilters
+-            # print(self.conv_right.weight.shape)
+-
+-
+-class RectifiedLinear(nn.Module):
+-
+-    def __init__(self, input_dim, output_dim):
+-        super(RectifiedLinear, self).__init__()
+-        self.dim = input_dim
+-        self.relu = nn.ReLU()
+-        self.dropout = nn.Dropout(0.1)
+-
+-    def forward(self,
+-                input: Tuple[torch.Tensor, torch.Tensor]):
+-        if isinstance(input, tuple):
+-            input, in_cache = input
+-        else :
+-            in_cache = torch.zeros(0, 0, 0, 0, dtype=torch.float)
+-        out = self.relu(input)
+-        # out = self.dropout(out)
+-        return (out, in_cache)
+-
+-    def to_kaldi_net(self):
+-        re_str = ''
+-        re_str += '<RectifiedLinear> %d %d\n' % (self.dim, self.dim)
+-        # re_str += '<!EndOfComponent>\n'
+-        return re_str
+-
+-        # re_str = ''
+-        # re_str += '<ParametricRelu> %d %d\n' % (self.dim, self.dim)
+-        # re_str += '<AlphaLearnRateCoef> 0 <BetaLearnRateCoef> 0\n'
+-        # re_str += toKaldiMatrix(np.ones((self.dim), dtype = 'int32'))
+-        # re_str += toKaldiMatrix(np.zeros((self.dim), dtype = 'int32'))
+-        # re_str += '<!EndOfComponent>\n'
+-        # return re_str
+-
+-    def to_pytorch_net(self, fread):
+-        line = fread.readline()
+-        splits = line.strip().split()
+-        assert len(splits) == 3
+-        assert splits[0] == '<RectifiedLinear>'
+-        assert int(splits[1]) == int(splits[2])
+-        assert int(splits[1]) == self.dim
+-        self.dim = int(splits[1])
+-
+-
+-def _build_repeats(
+-    fsmn_layers: int,
+-    linear_dim: int,
+-    proj_dim: int,
+-    lorder: int,
+-    rorder: int,
+-    lstride=1,
+-    rstride=1,
+-):
+-    repeats = [
+-        nn.Sequential(
+-            LinearTransform(linear_dim, proj_dim),
+-            FSMNBlock(proj_dim, proj_dim, lorder, rorder, 1, 1),
+-            AffineTransform(proj_dim, linear_dim),
+-            RectifiedLinear(linear_dim, linear_dim))
+-        for i in range(fsmn_layers)
+-    ]
+-
+-    return nn.Sequential(*repeats)
+-
+-
+-class FSMN(nn.Module):
+-
+-    def __init__(
+-        self,
+-        input_dim: int,
+-        input_affine_dim: int,
+-        fsmn_layers: int,
+-        linear_dim: int,
+-        proj_dim: int,
+-        lorder: int,
+-        rorder: int,
+-        lstride: int,
+-        rstride: int,
+-        output_affine_dim: int,
+-        output_dim: int,
+-    ):
+-        """
+-            Args:
+-                input_dim:              input dimension
+-                input_affine_dim:       input affine layer dimension
+-                fsmn_layers:            no. of fsmn units
+-                linear_dim:             fsmn input dimension
+-                proj_dim:               fsmn projection dimension
+-                lorder:                 fsmn left order
+-                rorder:                 fsmn right order
+-                lstride:                fsmn left stride
+-                rstride:                fsmn right stride
+-                output_affine_dim:      output affine layer dimension
+-                output_dim:             output dimension
+-        """
+-        super(FSMN, self).__init__()
+-
+-        self.input_dim = input_dim
+-        self.input_affine_dim = input_affine_dim
+-        self.fsmn_layers = fsmn_layers
+-        self.linear_dim = linear_dim
+-        self.proj_dim = proj_dim
+-        self.lorder = lorder
+-        self.rorder = rorder
+-        self.lstride = lstride
+-        self.rstride = rstride
+-        self.output_affine_dim = output_affine_dim
+-        self.output_dim = output_dim
+-
+-        self.padding = (self.lorder - 1) * self.lstride \
+-            + self.rorder * self.rstride
+-
+-        self.in_linear1 = AffineTransform(input_dim, input_affine_dim)
+-        self.in_linear2 = AffineTransform(input_affine_dim, linear_dim)
+-        self.relu = RectifiedLinear(linear_dim, linear_dim)
+-
+-        self.fsmn = _build_repeats(fsmn_layers, linear_dim, proj_dim, lorder,
+-                                   rorder, lstride, rstride)
+-
+-        self.out_linear1 = AffineTransform(linear_dim, output_affine_dim)
+-        self.out_linear2 = AffineTransform(output_affine_dim, output_dim)
+-        # self.softmax = nn.Softmax(dim = -1)
+-
+-    def fuse_modules(self):
+-        pass
+-
+-    def forward(
+-        self,
+-        input: torch.Tensor,
+-        in_cache: torch.Tensor = torch.zeros(0, 0, 0, dtype=torch.float)
+-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+-        """
+-        Args:
+-            input (torch.Tensor): Input tensor (B, T, D)
+-            in_cache(torch.Tensor): (B, D, C), C is the accumulated cache size
+-        """
+-
+-        if in_cache is None or len(in_cache) == 0 :
+-            in_cache = [torch.zeros(0, 0, 0, 0, dtype=torch.float)
+-                        for _ in range(len(self.fsmn))]
+-        else:
+-            in_cache = [in_cache[:, :, :, i: i + 1] for i in range(in_cache.size(-1))]
+-        input = (input, in_cache)
+-        x1 = self.in_linear1(input)
+-        x2 = self.in_linear2(x1)
+-        x3 = self.relu(x2)
+-        # x4 = self.fsmn(x3)
+-        x4, _ = x3
+-        for layer, module in enumerate(self.fsmn):
+-            x4, in_cache[layer] = module((x4, in_cache[layer]))
+-        x5 = self.out_linear1(x4)
+-        x6 = self.out_linear2(x5)
+-        # x7 = self.softmax(x6)
+-        x7, _ = x6
+-        # return x7, None
+-        return x7, torch.cat(in_cache, dim=-1)
+-
+-    def to_kaldi_net(self):
+-        re_str = ''
+-        re_str += '<Nnet>\n'
+-        re_str += self.in_linear1.to_kaldi_net()
+-        re_str += self.in_linear2.to_kaldi_net()
+-        re_str += self.relu.to_kaldi_net()
+-
+-        for fsmn in self.fsmn:
+-            re_str += fsmn[0].to_kaldi_net()
+-            re_str += fsmn[1].to_kaldi_net()
+-            re_str += fsmn[2].to_kaldi_net()
+-            re_str += fsmn[3].to_kaldi_net()
+-
+-        re_str += self.out_linear1.to_kaldi_net()
+-        re_str += self.out_linear2.to_kaldi_net()
+-        re_str += '<Softmax> %d %d\n' % (self.output_dim, self.output_dim)
+-        # re_str += '<!EndOfComponent>\n'
+-        re_str += '</Nnet>\n'
+-
+-        return re_str
+-
+-    def to_pytorch_net(self, kaldi_file):
+-        with open(kaldi_file, 'r', encoding='utf8') as fread:
+-            fread = open(kaldi_file, 'r')
+-            nnet_start_line = fread.readline()
+-            assert nnet_start_line.strip() == '<Nnet>'
+-
+-            self.in_linear1.to_pytorch_net(fread)
+-            self.in_linear2.to_pytorch_net(fread)
+-            self.relu.to_pytorch_net(fread)
+-
+-            for fsmn in self.fsmn:
+-                fsmn[0].to_pytorch_net(fread)
+-                fsmn[1].to_pytorch_net(fread)
+-                fsmn[2].to_pytorch_net(fread)
+-                fsmn[3].to_pytorch_net(fread)
+-
+-            self.out_linear1.to_pytorch_net(fread)
+-            self.out_linear2.to_pytorch_net(fread)
+-
+-            softmax_line = fread.readline()
+-            softmax_split = softmax_line.strip().split()
+-            assert softmax_split[0].strip() == '<Softmax>'
+-            assert int(softmax_split[1]) == self.output_dim
+-            assert int(softmax_split[2]) == self.output_dim
+-            # '<!EndOfComponent>\n'
+-
+-            nnet_end_line = fread.readline()
+-            assert nnet_end_line.strip() == '</Nnet>'
+-        fread.close()
+-
+-
+-if __name__ == '__main__':
+-    fsmn = FSMN(400, 140, 4, 250, 128, 10, 2, 1, 1, 140, 2599)
+-    print(fsmn)
+-
+-    num_params = sum(p.numel() for p in fsmn.parameters())
+-    print('the number of model params: {}'.format(num_params))
+-    x = torch.zeros(128, 200, 400)  # batch-size * time * dim
+-    y, _ = fsmn(x)  # batch-size * time * dim
+-    print('input shape: {}'.format(x.shape))
+-    print('output shape: {}'.format(y.shape))
+-
+-    print(fsmn.to_kaldi_net())
+diff --git a/wekws/model/kws_model.py b/wekws/model/kws_model.py
+index 349690b..779f3de 100644
+--- a/wekws/model/kws_model.py
++++ b/wekws/model/kws_model.py
+@@ -1,5 +1,4 @@
+ # Copyright (c) 2021 Binbin Zhang
+-#               2023 Jing Du
+ #
+ # Licensed under the Apache License, Version 2.0 (the "License");
+ # you may not use this file except in compliance with the License.
+@@ -18,6 +17,7 @@ from typing import Optional, Tuple
+ 
+ import torch
+ import torch.nn as nn
++import torch.nn.functional as F
+ 
+ from wekws.model.cmvn import GlobalCMVN
+ from wekws.model.classifier import (GlobalClassifier, LastClassifier,
+@@ -26,15 +26,14 @@ from wekws.model.subsampling import (LinearSubsampling1, Conv1dSubsampling1,
+                                      NoSubsampling)
+ from wekws.model.tcn import TCN, CnnBlock, DsCnnBlock
+ from wekws.model.mdtc import MDTC
+-from wekws.utils.cmvn import load_cmvn, load_kaldi_cmvn
+-from wekws.model.fsmn import FSMN
++from wekws.utils.cmvn import load_cmvn
+ 
+ 
+ class KWSModel(nn.Module):
+     """Our model consists of four parts:
+     1. global_cmvn: Optional, (idim, idim)
+     2. preprocessing: feature dimention projection, (idim, hdim)
+-    3. backbone: backbone of the whole network, (hdim, hdim)
++    3. backbone: backbone or feature extractor of the whole network, (hdim, hdim)
+     4. classifier: output layer or classifier of KWS model, (hdim, odim)
+     5. activation:
+         nn.Sigmoid for wakeup word
+@@ -50,6 +49,7 @@ class KWSModel(nn.Module):
+         backbone: nn.Module,
+         classifier: nn.Module,
+         activation: nn.Module,
++        ctc_lo: Optional[nn.Module] = None
+     ):
+         super().__init__()
+         self.idim = idim
+@@ -60,33 +60,24 @@ class KWSModel(nn.Module):
+         self.backbone = backbone
+         self.classifier = classifier
+         self.activation = activation
++        self.ctc_lo = ctc_lo
+ 
+     def forward(
+         self,
+         x: torch.Tensor,
+         in_cache: torch.Tensor = torch.zeros(0, 0, 0, dtype=torch.float)
+-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+-        if self.global_cmvn is not None:
+-            x = self.global_cmvn(x)
+-        x = self.preprocessing(x)
+-        x, out_cache = self.backbone(x, in_cache)
+-        x = self.classifier(x)
+-        x = self.activation(x)
+-        return x, out_cache
+-
+-    def forward_softmax(self,
+-                        x: torch.Tensor,
+-                        in_cache: torch.Tensor = torch.zeros(
+-                            0, 0, 0, dtype=torch.float)
+-                        ) -> Tuple[torch.Tensor, torch.Tensor]:
++    ) -> Tuple[torch.Tensor, Optional[torch.Tensor], torch.Tensor]:
+         if self.global_cmvn is not None:
+             x = self.global_cmvn(x)
+         x = self.preprocessing(x)
+         x, out_cache = self.backbone(x, in_cache)
++        if self.ctc_lo is not None:
++            x_ctc = F.log_softmax(self.ctc_lo(x), dim=2)
++        else:
++            x_ctc = None
+         x = self.classifier(x)
+         x = self.activation(x)
+-        x = x.softmax(2)
+-        return x, out_cache
++        return x, x_ctc, out_cache
+ 
+     def fuse_modules(self):
+         self.preprocessing.fuse_modules()
+@@ -96,10 +87,7 @@ class KWSModel(nn.Module):
+ def init_model(configs):
+     cmvn = configs.get('cmvn', {})
+     if 'cmvn_file' in cmvn and cmvn['cmvn_file'] is not None:
+-        if "kaldi" in cmvn['cmvn_file']:
+-            mean, istd = load_kaldi_cmvn(cmvn['cmvn_file'])
+-        else:
+-            mean, istd = load_cmvn(cmvn['cmvn_file'])
++        mean, istd = load_cmvn(cmvn['cmvn_file'])
+         global_cmvn = GlobalCMVN(
+             torch.from_numpy(mean).float(),
+             torch.from_numpy(istd).float(),
+@@ -111,6 +99,8 @@ def init_model(configs):
+     input_dim = configs['input_dim']
+     output_dim = configs['output_dim']
+     hidden_dim = configs['hidden_dim']
++    vocab_size = configs.get('vocab_size', -1)
++
+ 
+     prep_type = configs['preprocessing']['type']
+     if prep_type == 'linear':
+@@ -154,20 +144,6 @@ def init_model(configs):
+                         hidden_dim,
+                         kernel_size,
+                         causal=causal)
+-    elif backbone_type == 'fsmn':
+-        input_affine_dim = configs['backbone']['input_affine_dim']
+-        num_layers = configs['backbone']['num_layers']
+-        linear_dim = configs['backbone']['linear_dim']
+-        proj_dim = configs['backbone']['proj_dim']
+-        left_order = configs['backbone']['left_order']
+-        right_order = configs['backbone']['right_order']
+-        left_stride = configs['backbone']['left_stride']
+-        right_stride = configs['backbone']['right_stride']
+-        output_affine_dim = configs['backbone']['output_affine_dim']
+-        backbone = FSMN(input_dim, input_affine_dim, num_layers, linear_dim,
+-                        proj_dim, left_order, right_order, left_stride,
+-                        right_stride, output_affine_dim, output_dim)
+-
+     else:
+         print('Unknown body type {}'.format(backbone_type))
+         sys.exit(1)
+@@ -187,8 +163,6 @@ def init_model(configs):
+             # last means we use last frame to do backpropagation, so the model
+             # can be infered streamingly
+             classifier = LastClassifier(classifier_base)
+-        elif classifier_type == 'identity':
+-            classifier = nn.Identity()
+         else:
+             print('Unknown classifier type {}'.format(classifier_type))
+             sys.exit(1)
+@@ -196,18 +170,11 @@ def init_model(configs):
+     else:
+         classifier = LinearClassifier(hidden_dim, output_dim)
+         activation = nn.Sigmoid()
+-
+-    # Here we add a possible "activation_type",
+-    # one can choose to use other activation function.
+-    # We use nn.Identity just for CTC loss
+-    if "activation" in configs:
+-        activation_type = configs["activation"]["type"]
+-        if activation_type == 'identity':
+-            activation = nn.Identity()
+-        else:
+-            print('Unknown activation type {}'.format(activation_type))
+-            sys.exit(1)
++    if vocab_size > 0:
++        ctc_lo = LinearClassifier(hidden_dim, vocab_size)   
++    else:
++        ctc_lo = None
+ 
+     kws_model = KWSModel(input_dim, output_dim, hidden_dim, global_cmvn,
+-                         preprocessing, backbone, classifier, activation)
++                         preprocessing, backbone, classifier, activation, ctc_lo)
+     return kws_model
+diff --git a/wekws/model/loss.py b/wekws/model/loss.py
+index 42045a0..7b0825d 100644
+--- a/wekws/model/loss.py
++++ b/wekws/model/loss.py
+@@ -1,5 +1,4 @@
+ # Copyright (c) 2021 Binbin Zhang
+-#               2023 Jing Du
+ #
+ # Licensed under the Apache License, Version 2.0 (the "License");
+ # you may not use this file except in compliance with the License.
+@@ -13,12 +12,10 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ 
++from typing import Optional
++
+ import torch
+-import math
+-import sys
+ import torch.nn.functional as F
+-from collections import defaultdict
+-from typing import List, Tuple
+ 
+ from wekws.utils.mask import padding_mask
+ 
+@@ -88,6 +85,102 @@ def max_pooling_loss(logits: torch.Tensor,
+     return loss, acc
+ 
+ 
++def ctc_joint_loss(logits: torch.Tensor,
++                   target: torch.Tensor,
++                   lengths: torch.Tensor,
++                   min_duration: int = 0,
++                   ctc_logits: Optional[torch.Tensor] = None,
++                   ctc_target: Optional[torch.Tensor] = None,
++                   target_lengths: Optional[torch.Tensor] = None):
++    ''' Max-pooling loss
++        For keyword, select the frame with the highest posterior.
++            The keyword is triggered when any of the frames is triggered.
++        For none keyword, select the hardest frame, namely the frame
++            with lowest filler posterior(highest keyword posterior).
++            the keyword is not triggered when all frames are not triggered.
++
++    Attributes:
++        logits: (B, T, D), D is the number of keywords
++        target: (B)
++        lengths: (B)
++        min_duration: min duration of the keyword
++    Returns:
++        (float): loss of current batch
++        (float): accuracy of current batch
++    '''
++    mask = padding_mask(lengths)
++    num_utts = logits.size(0)
++    num_keywords = logits.size(2)
++
++    target = target.cpu()
++    loss = 0.0
++    ctc_loss = 0.0
++    if ctc_logits is not None:
++        ctc_filter_mask = torch.max(ctc_target, dim=-1)[0] > 0
++        ctc_logits = ctc_logits[ctc_filter_mask]
++        ctc_target = ctc_target[ctc_filter_mask]
++        feat_lengths = lengths[ctc_filter_mask]
++        target_lengths = target_lengths[ctc_filter_mask]
++        ctc_loss += F.ctc_loss(ctc_logits.transpose(0, 1),
++                              ctc_target, feat_lengths,
++                              target_lengths, blank=0,
++                              reduction='sum',
++                              zero_infinity=False)        
++        ctc_loss /= ctc_target.size(0)
++
++    for i in range(num_utts):
++        # filter out ctc sample
++        # if torch.max(ctc_target[i], dim=-1)[0] > 0:
++        #     continue
++        for j in range(num_keywords):
++            # Add entropy loss CE = -(t * log(p) + (1 - t) * log(1 - p))
++            if target[i] == j:
++                # For the keyword, do max-polling
++                prob = logits[i, :, j]
++                m = mask[i].clone().detach()
++                m[:min_duration] = True
++                prob = prob.masked_fill(m, 0.0)
++                prob = torch.clamp(prob, 1e-8, 1.0)
++                max_prob = prob.max()
++                loss += -torch.log(max_prob)
++            else:
++                # For other keywords or filler, do min-polling
++                prob = 1 - logits[i, :, j]
++                prob = prob.masked_fill(mask[i], 1.0)
++                prob = torch.clamp(prob, 1e-8, 1.0)
++                min_prob = prob.min()
++                loss += -torch.log(min_prob)
++<<<<<<< HEAD
++    # TODO num_utts = num_utts - ctt_num_utts
++=======
++    # filter out ctc sample
++    # loss = loss / (num_utts - ctt_num_utts)
++>>>>>>> update ctc
++    loss = loss / num_utts
++    loss = 0.8 * loss + 0.2 * ctc_loss
++
++    # Compute accuracy of current batch
++    mask = mask.unsqueeze(-1)
++    logits = logits.masked_fill(mask, 0.0)
++    max_logits, index = logits.max(1)
++    num_correct = 0
++    for i in range(num_utts):
++        max_p, idx = max_logits[i].max(0)
++        # Predict correct as the i'th keyword
++        if max_p > 0.5 and idx == target[i]:
++            num_correct += 1
++        # Predict correct as the filler, filler id < 0
++        if max_p < 0.5 and target[i] < 0:
++            num_correct += 1
++    acc = num_correct / num_utts
++    # acc = 0.0
++<<<<<<< HEAD
++    return loss, acc
++=======
++    return loss, ctc_loss, acc
++>>>>>>> update ctc
++
++
+ def acc_frame(
+     logits: torch.Tensor,
+     target: torch.Tensor,
+@@ -98,65 +191,6 @@ def acc_frame(
+     correct = pred.eq(target.long().view_as(pred)).sum().item()
+     return correct * 100.0 / logits.size(0)
+ 
+-def acc_utterance(logits: torch.Tensor, target: torch.Tensor,
+-                  logits_length: torch.Tensor, target_length: torch.Tensor):
+-    if logits is None:
+-        return 0
+-
+-    logits = logits.softmax(2)  # (1, maxlen, vocab_size)
+-    logits = logits.cpu()
+-    target = target.cpu()
+-
+-    total_word = 0
+-    total_ins = 0
+-    total_sub = 0
+-    total_del = 0
+-    calculator = Calculator()
+-    for i in range(logits.size(0)):
+-        score = logits[i][:logits_length[i]]
+-        hyps = ctc_prefix_beam_search(score, logits_length[i], None, 3, 5)
+-        lab = [str(item) for item in target[i][:target_length[i]].tolist()]
+-        rec = []
+-        if len(hyps) > 0:
+-            rec = [str(item) for item in hyps[0][0]]
+-        result = calculator.calculate(lab, rec)
+-        # print(f'result:{result}')
+-        if result['all'] != 0:
+-            total_word += result['all']
+-            total_ins += result['ins']
+-            total_sub += result['sub']
+-            total_del += result['del']
+-
+-    return float(total_word - total_ins - total_sub
+-                 - total_del) * 100.0 / total_word
+-
+-def ctc_loss(logits: torch.Tensor,
+-             target: torch.Tensor,
+-             logits_lengths: torch.Tensor,
+-             target_lengths: torch.Tensor,
+-             need_acc: bool = False):
+-    """ CTC Loss
+-    Args:
+-        logits: (B, D), D is the number of keywords plus 1 (non-keyword)
+-        target: (B)
+-        logits_lengths: (B)
+-        target_lengths: (B)
+-    Returns:
+-        (float): loss of current batch
+-    """
+-
+-    acc = 0.0
+-    if need_acc:
+-        acc = acc_utterance(logits, target, logits_lengths, target_lengths)
+-
+-    # logits: (B, L, D) -> (L, B, D)
+-    logits = logits.transpose(0, 1)
+-    logits = logits.log_softmax(2)
+-    loss = F.ctc_loss(
+-        logits, target, logits_lengths, target_lengths, reduction='sum')
+-    loss = loss / logits.size(1)  # batch mean
+-
+-    return loss, acc
+ 
+ def cross_entropy(logits: torch.Tensor, target: torch.Tensor):
+     """ Cross Entropy Loss
+@@ -169,7 +203,7 @@ def cross_entropy(logits: torch.Tensor, target: torch.Tensor):
+         (float): loss of current batch
+         (float): accuracy of current batch
+     """
+-    loss = F.cross_entropy(logits, target.type(torch.int64))
++    loss = F.cross_entropy(logits, target)
+     acc = acc_frame(logits, target)
+     return loss, acc
+ 
+@@ -177,285 +211,50 @@ def cross_entropy(logits: torch.Tensor, target: torch.Tensor):
+ def criterion(type: str,
+               logits: torch.Tensor,
+               target: torch.Tensor,
+-              lengths: torch.Tensor,
+-              target_lengths: torch.Tensor = None,
++              feats_lengths: torch.Tensor,
+               min_duration: int = 0,
+-              validation: bool = False, ):
++              ctc_logits: Optional[torch.Tensor] = None,
++              ctc_target: Optional[torch.Tensor] = None,
++              ctc_label_lengths: Optional[torch.Tensor] = None):
+     if type == 'ce':
+         loss, acc = cross_entropy(logits, target)
+         return loss, acc
+     elif type == 'max_pooling':
+-        loss, acc = max_pooling_loss(logits, target, lengths, min_duration)
++        loss, acc = max_pooling_loss(logits, target, feats_lengths, min_duration)
++<<<<<<< HEAD
+         return loss, acc
+-    elif type == 'ctc':
+-        loss, acc = ctc_loss(
+-            logits, target, lengths, target_lengths, validation)
++    elif type == 'ctc_joint_loss':
++        loss, acc = ctc_joint_loss(logits, target, feats_lengths, min_duration,
++                                   ctc_logits, ctc_target, ctc_label_lengths)
++=======
++>>>>>>> update ctc
+         return loss, acc
++    elif type == 'ctc_joint_loss':
++        loss, ctc_loss, acc = ctc_joint_loss(logits, target, feats_lengths, min_duration,
++                                   ctc_logits, ctc_target, ctc_label_lengths)
++        return loss, ctc_loss, acc
+     else:
+         exit(1)
+ 
+-def ctc_prefix_beam_search(
+-    logits: torch.Tensor,
+-    logits_lengths: torch.Tensor,
+-    keywords_tokenset: set = None,
+-    score_beam_size: int = 3,
+-    path_beam_size: int = 20,
+-) -> Tuple[List[List[int]], torch.Tensor]:
+-    """ CTC prefix beam search inner implementation
+-
+-    Args:
+-        logits (torch.Tensor): (1, max_len, vocab_size)
+-        logits_lengths (torch.Tensor): (1, )
+-        keywords_tokenset (set): token set for filtering score
+-        score_beam_size (int): beam size for score
+-        path_beam_size (int): beam size for path
+-
+-    Returns:
+-        List[List[int]]: nbest results
+-    """
+-    maxlen = logits.size(0)
+-    # ctc_probs = logits.softmax(1)  # (1, maxlen, vocab_size)
+-    ctc_probs = logits
+-
+-    cur_hyps = [(tuple(), (1.0, 0.0, []))]
+-
+-    # 2. CTC beam search step by step
+-    for t in range(0, maxlen):
+-        probs = ctc_probs[t]  # (vocab_size,)
+-        # key: prefix, value (pb, pnb), default value(-inf, -inf)
+-        next_hyps = defaultdict(lambda: (0.0, 0.0, []))
+-
+-        # 2.1 First beam prune: select topk best
+-        top_k_probs, top_k_index = probs.topk(
+-            score_beam_size)  # (score_beam_size,)
+-
+-        # filter prob score that is too small
+-        filter_probs = []
+-        filter_index = []
+-        for prob, idx in zip(top_k_probs.tolist(), top_k_index.tolist()):
+-            if keywords_tokenset is not None:
+-                if prob > 0.05 and idx in keywords_tokenset:
+-                    filter_probs.append(prob)
+-                    filter_index.append(idx)
+-            else:
+-                if prob > 0.05:
+-                    filter_probs.append(prob)
+-                    filter_index.append(idx)
+-
+-        if len(filter_index) == 0:
+-            continue
+-
+-        for s in filter_index:
+-            ps = probs[s].item()
+-
+-            for prefix, (pb, pnb, cur_nodes) in cur_hyps:
+-                last = prefix[-1] if len(prefix) > 0 else None
+-                if s == 0:  # blank
+-                    n_pb, n_pnb, nodes = next_hyps[prefix]
+-                    n_pb = n_pb + pb * ps + pnb * ps
+-                    nodes = cur_nodes.copy()
+-                    next_hyps[prefix] = (n_pb, n_pnb, nodes)
+-                elif s == last:
+-                    if not math.isclose(pnb, 0.0, abs_tol=0.000001):
+-                        # Update *ss -> *s;
+-                        n_pb, n_pnb, nodes = next_hyps[prefix]
+-                        n_pnb = n_pnb + pnb * ps
+-                        nodes = cur_nodes.copy()
+-                        if ps > nodes[-1]['prob']:  # update frame and prob
+-                            nodes[-1]['prob'] = ps
+-                            nodes[-1]['frame'] = t
+-                        next_hyps[prefix] = (n_pb, n_pnb, nodes)
+-
+-                    if not math.isclose(pb, 0.0, abs_tol=0.000001):
+-                        # Update *s-s -> *ss, - is for blank
+-                        n_prefix = prefix + (s, )
+-                        n_pb, n_pnb, nodes = next_hyps[n_prefix]
+-                        n_pnb = n_pnb + pb * ps
+-                        nodes = cur_nodes.copy()
+-                        nodes.append(dict(token=s, frame=t,
+-                                          prob=ps))  # to record token prob
+-                        next_hyps[n_prefix] = (n_pb, n_pnb, nodes)
+-                else:
+-                    n_prefix = prefix + (s, )
+-                    n_pb, n_pnb, nodes = next_hyps[n_prefix]
+-                    if nodes:
+-                        if ps > nodes[-1]['prob']:  # update frame and prob
+-                            # nodes[-1]['prob'] = ps
+-                            # nodes[-1]['frame'] = t
+-                            # avoid change other beam which has this node.
+-                            nodes.pop()
+-                            nodes.append(dict(token=s, frame=t, prob=ps))
+-                    else:
+-                        nodes = cur_nodes.copy()
+-                        nodes.append(dict(token=s, frame=t,
+-                                          prob=ps))  # to record token prob
+-                    n_pnb = n_pnb + pb * ps + pnb * ps
+-                    next_hyps[n_prefix] = (n_pb, n_pnb, nodes)
+-
+-        # 2.2 Second beam prune
+-        next_hyps = sorted(
+-            next_hyps.items(), key=lambda x: (x[1][0] + x[1][1]), reverse=True)
+-
+-        cur_hyps = next_hyps[:path_beam_size]
+-
+-    hyps = [(y[0], y[1][0] + y[1][1], y[1][2]) for y in cur_hyps]
+-    return hyps
+-
+-
+-class Calculator:
+-
+-    def __init__(self):
+-        self.data = {}
+-        self.space = []
+-        self.cost = {}
+-        self.cost['cor'] = 0
+-        self.cost['sub'] = 1
+-        self.cost['del'] = 1
+-        self.cost['ins'] = 1
+-
+-    def calculate(self, lab, rec):
+-        # Initialization
+-        lab.insert(0, '')
+-        rec.insert(0, '')
+-        while len(self.space) < len(lab):
+-            self.space.append([])
+-        for row in self.space:
+-            for element in row:
+-                element['dist'] = 0
+-                element['error'] = 'non'
+-            while len(row) < len(rec):
+-                row.append({'dist': 0, 'error': 'non'})
+-        for i in range(len(lab)):
+-            self.space[i][0]['dist'] = i
+-            self.space[i][0]['error'] = 'del'
+-        for j in range(len(rec)):
+-            self.space[0][j]['dist'] = j
+-            self.space[0][j]['error'] = 'ins'
+-        self.space[0][0]['error'] = 'non'
+-        for token in lab:
+-            if token not in self.data and len(token) > 0:
+-                self.data[token] = {
+-                    'all': 0,
+-                    'cor': 0,
+-                    'sub': 0,
+-                    'ins': 0,
+-                    'del': 0
+-                }
+-        for token in rec:
+-            if token not in self.data and len(token) > 0:
+-                self.data[token] = {
+-                    'all': 0,
+-                    'cor': 0,
+-                    'sub': 0,
+-                    'ins': 0,
+-                    'del': 0
+-                }
+-        # Computing edit distance
+-        for i, lab_token in enumerate(lab):
+-            for j, rec_token in enumerate(rec):
+-                if i == 0 or j == 0:
+-                    continue
+-                min_dist = sys.maxsize
+-                min_error = 'none'
+-                dist = self.space[i - 1][j]['dist'] + self.cost['del']
+-                error = 'del'
+-                if dist < min_dist:
+-                    min_dist = dist
+-                    min_error = error
+-                dist = self.space[i][j - 1]['dist'] + self.cost['ins']
+-                error = 'ins'
+-                if dist < min_dist:
+-                    min_dist = dist
+-                    min_error = error
+-                if lab_token == rec_token:
+-                    dist = self.space[i - 1][j - 1]['dist'] + self.cost['cor']
+-                    error = 'cor'
+-                else:
+-                    dist = self.space[i - 1][j - 1]['dist'] + self.cost['sub']
+-                    error = 'sub'
+-                if dist < min_dist:
+-                    min_dist = dist
+-                    min_error = error
+-                self.space[i][j]['dist'] = min_dist
+-                self.space[i][j]['error'] = min_error
+-        # Tracing back
+-        result = {
+-            'lab': [],
+-            'rec': [],
+-            'all': 0,
+-            'cor': 0,
+-            'sub': 0,
+-            'ins': 0,
+-            'del': 0
+-        }
+-        i = len(lab) - 1
+-        j = len(rec) - 1
+-        while True:
+-            if self.space[i][j]['error'] == 'cor':  # correct
+-                if len(lab[i]) > 0:
+-                    self.data[lab[i]]['all'] = self.data[lab[i]]['all'] + 1
+-                    self.data[lab[i]]['cor'] = self.data[lab[i]]['cor'] + 1
+-                    result['all'] = result['all'] + 1
+-                    result['cor'] = result['cor'] + 1
+-                result['lab'].insert(0, lab[i])
+-                result['rec'].insert(0, rec[j])
+-                i = i - 1
+-                j = j - 1
+-            elif self.space[i][j]['error'] == 'sub':  # substitution
+-                if len(lab[i]) > 0:
+-                    self.data[lab[i]]['all'] = self.data[lab[i]]['all'] + 1
+-                    self.data[lab[i]]['sub'] = self.data[lab[i]]['sub'] + 1
+-                    result['all'] = result['all'] + 1
+-                    result['sub'] = result['sub'] + 1
+-                result['lab'].insert(0, lab[i])
+-                result['rec'].insert(0, rec[j])
+-                i = i - 1
+-                j = j - 1
+-            elif self.space[i][j]['error'] == 'del':  # deletion
+-                if len(lab[i]) > 0:
+-                    self.data[lab[i]]['all'] = self.data[lab[i]]['all'] + 1
+-                    self.data[lab[i]]['del'] = self.data[lab[i]]['del'] + 1
+-                    result['all'] = result['all'] + 1
+-                    result['del'] = result['del'] + 1
+-                result['lab'].insert(0, lab[i])
+-                result['rec'].insert(0, '')
+-                i = i - 1
+-            elif self.space[i][j]['error'] == 'ins':  # insertion
+-                if len(rec[j]) > 0:
+-                    self.data[rec[j]]['ins'] = self.data[rec[j]]['ins'] + 1
+-                    result['ins'] = result['ins'] + 1
+-                result['lab'].insert(0, '')
+-                result['rec'].insert(0, rec[j])
+-                j = j - 1
+-            elif self.space[i][j]['error'] == 'non':  # starting point
+-                break
+-            else:  # shouldn't reach here
+-                print(
+-                    'this should not happen, '
+-                    'i = {i} , j = {j} , error = {error}'
+-                    .format(i=i, j=j, error=self.space[i][j]['error']))
+-        return result
+-
+-    def overall(self):
+-        result = {'all': 0, 'cor': 0, 'sub': 0, 'ins': 0, 'del': 0}
+-        for token in self.data:
+-            result['all'] = result['all'] + self.data[token]['all']
+-            result['cor'] = result['cor'] + self.data[token]['cor']
+-            result['sub'] = result['sub'] + self.data[token]['sub']
+-            result['ins'] = result['ins'] + self.data[token]['ins']
+-            result['del'] = result['del'] + self.data[token]['del']
+-        return result
+-
+-    def cluster(self, data):
+-        result = {'all': 0, 'cor': 0, 'sub': 0, 'ins': 0, 'del': 0}
+-        for token in data:
+-            if token in self.data:
+-                result['all'] = result['all'] + self.data[token]['all']
+-                result['cor'] = result['cor'] + self.data[token]['cor']
+-                result['sub'] = result['sub'] + self.data[token]['sub']
+-                result['ins'] = result['ins'] + self.data[token]['ins']
+-                result['del'] = result['del'] + self.data[token]['del']
+-        return result
+ 
+-    def keys(self):
+-        return list(self.data.keys())
++if __name__ == '__main__':
++    import random
++    logits = torch.rand((6, 200, 1))
++    target = torch.LongTensor([-1, -1, 0, -1, -1, 0])
++    lengths = torch.LongTensor([160, 132, 80, 200, 136, 128])
++    ctc_logits = torch.rand((6, 200, 80))
++    ctc_logits = torch.log_softmax(ctc_logits, dim=2)
++    ctc_target = torch.LongTensor([
++        [random.randint(1, 79) for _ in range(16)],
++        [random.randint(1, 79) for _ in range(16)],
++        [-1 for _ in range(16)],
++        [random.randint(1, 79) for _ in range(16)],
++        [-1 for _ in range(16)],
++        [random.randint(1, 79) for _ in range(16)]
++    ])
++    target_lengths = torch.LongTensor([16, 15, 12, 10, 8, 6])
++    loss = max_pooling_loss(logits, target, lengths,
++                            ctc_logits=ctc_logits,
++                            ctc_target=ctc_target,
++                            target_lengths=target_lengths)
++    print(loss)
+\ No newline at end of file
+diff --git a/wekws/utils/cmvn.py b/wekws/utils/cmvn.py
+index b28fad3..1d2ecbd 100644
+--- a/wekws/utils/cmvn.py
++++ b/wekws/utils/cmvn.py
+@@ -15,7 +15,6 @@
+ 
+ import json
+ import math
+-import re
+ 
+ import numpy as np
+ 
+@@ -43,50 +42,3 @@ def load_cmvn(json_cmvn_file):
+         variance[i] = 1.0 / math.sqrt(variance[i])
+     cmvn = np.array([means, variance])
+     return cmvn
+-
+-def load_kaldi_cmvn(cmvn_file):
+-    """ Load the kaldi format cmvn stats file and no need to calculate
+-
+-    Args:
+-        cmvn_file: cmvn stats file in kaldi format
+-
+-    Returns:
+-        a numpy array of [means, vars]
+-    """
+-
+-    means = None
+-    variance = None
+-    with open(cmvn_file) as f:
+-        all_lines = f.readlines()
+-        for idx, line in enumerate(all_lines):
+-            if line.find('AddShift') != -1:
+-                segs = line.strip().split(' ')
+-                assert len(segs) == 3
+-                next_line = all_lines[idx + 1]
+-                means_str = re.findall(r'[\[](.*?)[\]]', next_line)[0]
+-                means_list = means_str.strip().split(' ')
+-                means = [0 - float(s) for s in means_list]
+-                assert len(means) == int(segs[1])
+-            elif line.find('Rescale') != -1:
+-                segs = line.strip().split(' ')
+-                assert len(segs) == 3
+-                next_line = all_lines[idx + 1]
+-                vars_str = re.findall(r'[\[](.*?)[\]]', next_line)[0]
+-                vars_list = vars_str.strip().split(' ')
+-                variance = [float(s) for s in vars_list]
+-                assert len(variance) == int(segs[1])
+-            elif line.find('Splice') != -1:
+-                segs = line.strip().split(' ')
+-                assert len(segs) == 3
+-                next_line = all_lines[idx + 1]
+-                splice_str = re.findall(r'[\[](.*?)[\]]', next_line)[0]
+-                splice_list = splice_str.strip().split(' ')
+-                assert len(splice_list) * int(segs[2]) == int(segs[1])
+-                copy_times = len(splice_list)
+-            else:
+-                continue
+-
+-    cmvn = np.array([means, variance])
+-    cmvn = np.tile(cmvn, (1, copy_times))
+-
+-    return cmvn
+diff --git a/wekws/utils/executor.py b/wekws/utils/executor.py
+index 2283e71..370eca1 100644
+--- a/wekws/utils/executor.py
++++ b/wekws/utils/executor.py
+@@ -33,21 +33,22 @@ class Executor:
+         epoch = args.get('epoch', 0)
+         min_duration = args.get('min_duration', 0)
+ 
++        num_total_batch = 0
++        total_loss = 0.0
+         for batch_idx, batch in enumerate(data_loader):
+-            key, feats, target, feats_lengths, label_lengths = batch
++            key, feats, target, ctc_target, feats_lengths, ctc_label_lengths = batch
+             feats = feats.to(device)
+             target = target.to(device)
++            ctc_target = ctc_target.to(device)
+             feats_lengths = feats_lengths.to(device)
+-            label_lengths = label_lengths.to(device)
++            ctc_label_lengths = ctc_label_lengths.to(device)
+             num_utts = feats_lengths.size(0)
+             if num_utts == 0:
+                 continue
+-            logits, _ = model(feats)
++            logits, ctc_logits, _ = model(feats)
+             loss_type = args.get('criterion', 'max_pooling')
+-            loss, acc = criterion(loss_type, logits, target, feats_lengths,
+-                                  target_lengths=label_lengths,
+-                                  min_duration=min_duration,
+-                                  validation=False)
++            loss, ctc_loss, acc = criterion(loss_type, logits, target, feats_lengths,
++                                  min_duration, ctc_logits, ctc_target, ctc_label_lengths)
+             optimizer.zero_grad()
+             loss.backward()
+             grad_norm = clip_grad_norm_(model.parameters(), clip)
+@@ -55,8 +56,8 @@ class Executor:
+                 optimizer.step()
+             if batch_idx % log_interval == 0:
+                 logging.debug(
+-                    'TRAIN Batch {}/{} loss {:.8f} acc {:.8f}'.format(
+-                        epoch, batch_idx, loss.item(), acc))
++                    'TRAIN Batch {}/{} loss {:.8f} ctc_loss {:.8f} acc {:.8f}'.format(
++                        epoch, batch_idx, loss.item(), ctc_loss.item(), acc))
+ 
+     def cv(self, model, data_loader, device, args):
+         ''' Cross validation on
+@@ -67,33 +68,35 @@ class Executor:
+         # in order to avoid division by 0
+         num_seen_utts = 1
+         total_loss = 0.0
++        total_ctc_loss = []
+         total_acc = 0.0
+         with torch.no_grad():
+             for batch_idx, batch in enumerate(data_loader):
+-                key, feats, target, feats_lengths, label_lengths = batch
++                key, feats, target, ctc_target, feats_lengths, ctc_label_lengths = batch
+                 feats = feats.to(device)
+                 target = target.to(device)
++                ctc_target = ctc_target.to(device)
+                 feats_lengths = feats_lengths.to(device)
+-                label_lengths = label_lengths.to(device)
++                ctc_label_lengths = ctc_label_lengths.to(device)
+                 num_utts = feats_lengths.size(0)
+                 if num_utts == 0:
+                     continue
+-                logits, _ = model(feats)
+-                loss, acc = criterion(args.get('criterion', 'max_pooling'),
+-                                      logits, target, feats_lengths,
+-                                      target_lengths=label_lengths,
+-                                      min_duration=0,
+-                                      validation=True)
++                logits, ctc_logits, _ = model(feats)
++                loss, ctc_loss, acc = criterion(args.get('criterion', 'max_pooling'),
++                                      logits, target, feats_lengths, 0,
++                                      ctc_logits, ctc_target, ctc_label_lengths)
++            
+                 if torch.isfinite(loss):
++                    total_ctc_loss.append(ctc_loss.item())
+                     num_seen_utts += num_utts
+                     total_loss += loss.item() * num_utts
+                     total_acc += acc * num_utts
+                 if batch_idx % log_interval == 0:
+                     logging.debug(
+-                        'CV Batch {}/{} loss {:.8f} acc {:.8f} history loss {:.8f}'
+-                        .format(epoch, batch_idx, loss.item(), acc,
++                        'CV Batch {}/{} loss {:.8f} ctc_loss {:.8f} acc {:.8f} history loss {:.8f}'
++                        .format(epoch, batch_idx, loss.item(), ctc_loss.item(), acc,
+                                 total_loss / num_seen_utts))
+-        return total_loss / num_seen_utts, total_acc / num_seen_utts
++        return total_loss / num_seen_utts, sum(total_ctc_loss) / len(total_ctc_loss), total_acc / num_seen_utts
+ 
+     def test(self, model, data_loader, device, args):
+         return self.cv(model, data_loader, device, args)
