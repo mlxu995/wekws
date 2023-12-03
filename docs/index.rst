@@ -1,22 +1,26 @@
-.. Wenet documentation master file, created by
-   sphinx-quickstart on Thu Dec  3 11:43:53 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Installation
+============
+We recommend that you use the following steps to install the dependencies.
+1. Install `Conda`
 
-Welcome to Wenet's documentation!
-=================================
+    1.1 Install Miniconda or Anaconda, please refer to: https://mirror.tuna.tsinghua.edu.cn/help/anaconda/
 
-
-wenet-tts an end-to-end TTS toolkit.
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Tutorial:
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+    1.2 Create Conda env:
+    ``` sh
+    conda create -n wekws python=3.8
+    conda activate wekws
+    ```
+2. Install `pytorch`, `torchaudio` and `cudatoolkit`
+    ``` sh
+    conda install pytorch=1.10.0 torchaudio=0.10.0 cudatoolkit=11.1 -c pytorch -c conda-forge
+    ```
+3. Clone the repo
+    ```
+    git clone https://github.com/wenet-e2e/wekws.git
+    ```
+4. Install requirements
+    ```
+    cd wekws
+    pip install -r requirements.txt
+    ```
+    
