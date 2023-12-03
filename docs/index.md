@@ -15,11 +15,11 @@ We recommend that you use the following steps to install the dependencies.
     conda install pytorch=1.10.0 torchaudio=0.10.0 cudatoolkit=11.1 -c pytorch -c conda-forge
     ```
 3. Clone the repo
-    ```
+    ``` sh
     git clone https://github.com/wenet-e2e/wekws.git
     ```
 4. Install requirements
-    ```
+    ``` sh
     cd wekws
     pip install -r requirements.txt
     ```
